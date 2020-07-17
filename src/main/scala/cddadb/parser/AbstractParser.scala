@@ -14,8 +14,8 @@ abstract class AbstractParser extends Parser {
   }
 
   override def fromFile(file: String): Parser = {
-    import cddadb.utils.FileUtil.classpathFileReader
-    this.reader = classpathFileReader(file)
+    import cddadb.utils.FileUtil.workDirFileReader
+    this.reader = workDirFileReader(file)
     setMode(FILE)
     this
   }
