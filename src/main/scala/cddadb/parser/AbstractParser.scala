@@ -1,6 +1,6 @@
 package cddadb.parser
 
-import java.io.Reader
+import java.io.{FileReader, Reader}
 
 abstract class AbstractParser extends Parser {
   var text: String = ""
@@ -14,8 +14,8 @@ abstract class AbstractParser extends Parser {
   }
 
   override def fromFile(file: String): Parser = {
-    import cddadb.utils.FileUtil.workDirFileReader
-    this.reader = workDirFileReader(file)
+    import cddadb.utils.FileUtil.workDirFile
+    this.reader = new FileReader(workDirFile(file))
     setMode(FILE)
     this
   }

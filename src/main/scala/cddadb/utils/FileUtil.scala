@@ -9,8 +9,7 @@ object FileUtil {
   def classpathFileReader(filename: String): Reader =
     Source.fromResource(filename).reader()
 
-  def workDirFileReader(filename: String): Reader =
-    new BufferedReader(new FileReader(filename))
+  def workDirFile(filename: String): File = new File(filename)
 
   // 移动文件
   def mv(dir: String): Unit = ???
@@ -18,13 +17,32 @@ object FileUtil {
   // 删除文件，r -> recursive
   def rm(path: String, r: Boolean): Nothing = ???
 
-  // 列出路径path下的所有文件和文件夹
-  def ls(path: File): List[File] = {
+  // modes of ls
+  val MIX = 0
+  val ONLY_FILE = 1
+  val ONLY_DIR = 2
+
+  // 列出文件
+  def ls(path: File, recursive: Boolean, mode: Int): List[File] = {
     var res = new ListBuffer[File]
     if (!path.exists) {
       throw new FileNotFoundException
     }
-    path.listFiles.foreach(res += _)
+    if (!path.isFile) {
+      path.listFiles.foreach {
+        f =>
+          if (mode match {
+            case ONLY_FILE => f.isFile
+            case ONLY_DIR => f.isDirectory
+            case MIX => true
+          }) {
+            res += f
+          }
+          if (recursive) {
+            res ++= ls(f, recursive = true, mode)
+          }
+      }
+    }
     res.toList
   }
 
@@ -33,7 +51,7 @@ object FileUtil {
       draw(this, hasPar = false, "", parHasBro = false, hasBro = false)
     }
 
-    // ├ └ ─ │
+    // 制表符 ├ └ ─ │
     def draw(node: FileNode, hasPar: Boolean, parPrefix: String,
              parHasBro: Boolean, hasBro: Boolean): String = {
       var prefix = ""
@@ -65,7 +83,7 @@ object FileUtil {
     if (!root.isDirectory) {
       node
     } else {
-      ls(root).foreach {
+      ls(root, recursive = false, MIX).foreach {
         child => node.subNodes += doTree(child)
       }
       node

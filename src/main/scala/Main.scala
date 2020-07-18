@@ -1,5 +1,3 @@
-
-object Main {
-
+class Main {
 }
 
