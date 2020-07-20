@@ -33,26 +33,30 @@ class POParser extends AbstractParser with JavaTokenParsers {
   private def merge(strings: List[String]): String = {
     var res = ""
     strings.foreach {
-      string => res += string
+      string =>
+        // TODO: 更多的转义字符替换
+        val str = string.substring(1, string.length - 1).
+          replaceAll("""\\"""", "\"")
+        res += str
     }
     res
   }
 
   private def comment: Parser[String] = rep("^#.*".r) ^^ merge
 
-  private def msgid: Parser[String] = "msgid" ~ rep("^\".*\"".r) ^^ {
+  private def msgid: Parser[String] = "msgid" ~ rep(stringLiteral) ^^ {
     case _ ~ strings => merge(strings)
   }
 
-  private def msgstr: Parser[String] = "msgstr" ~ rep("^\".*\"".r) ^^ {
+  private def msgstr: Parser[String] = "msgstr" ~ rep(stringLiteral) ^^ {
     case _ ~ strings => merge(strings)
   }
 
-  private def msgctxt: Parser[String] = "msgctxt" ~ rep("^\".*\"".r) ^^ {
+  private def msgctxt: Parser[String] = "msgctxt" ~ rep(stringLiteral) ^^ {
     case _ ~ strings => merge(strings)
   }
 
-  private def msgidPlural: Parser[String] = "msgid_plural" ~ rep("^\".*\"".r) ^^ {
+  private def msgidPlural: Parser[String] = "msgid_plural" ~ rep(stringLiteral) ^^ {
     case _ ~ strings => merge(strings)
   }
 

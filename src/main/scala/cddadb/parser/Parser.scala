@@ -3,9 +3,9 @@ package cddadb.parser
 import cddadb.parser.POParser.Trans
 
 trait Parser {
-  def fromText(text: String): Parser
+  def fromText(text: String): this.type
 
-  def fromFile(file: String): Parser
+  def fromFile(file: String): this.type
 
   def parse: List[Trans]
 

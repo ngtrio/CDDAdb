@@ -1,7 +1,10 @@
+# 数据文件下载
+* [po file](https://www.transifex.com/cataclysm-dda-translators/cataclysm-dda/master-cataclysm-dda/zh_CN/download/for_use/)
+
 # JSON格式
 [官方文档](https://github.com/CleverRaven/Cataclysm-DDA/blob/master/doc/JSON_INFO.md)
 
-# 怪物难度
+# difficulty
 ```
 if( type->difficulty < 3 ) {
             difficulty_str = _( "<color_light_gray>Minimal threat.</color>" );
@@ -17,7 +20,7 @@ if( type->difficulty < 3 ) {
             difficulty_str = _( "<color_red>Fatally dangerous!</color>" );
         }
 ```
-# 体型
+# volume to size
 ```
 static creature_size volume_to_size( const units::volume &vol )
 {
