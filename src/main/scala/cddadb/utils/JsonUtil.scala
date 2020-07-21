@@ -36,6 +36,10 @@ object JsonUtil {
     }
   }
 
+  def getStringField(field: String, jsValue: JsValue): String = {
+    getField(field, jsValue, "")(_.as[String])
+  }
+
   def hasField(field: String, jsValue: JsValue): Boolean = {
     jsValue \ field match {
       case _: JsDefined => true

@@ -1,6 +1,8 @@
 package cddadb.common
 
 object Field {
+  val DESCRIPTION = "description"
+
   val RELATIVE = "relative"
   val PROPORTIONAL = "proportional"
   val EXTEND = "extend"

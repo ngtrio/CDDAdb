@@ -22,7 +22,7 @@ abstract class BaseResourceManager(poPath: String, dataPath: String)
   private[this] val idToObj = Map[String, JsObject]()
 
   //copy-from obj cache
-  private[this] val cpfCache = ListBuffer[JsObject]()
+  private[this] var cpfCache = ListBuffer[JsObject]()
 
   protected def updateTrans(): Unit = {
     val poParser = POParser()
@@ -46,19 +46,34 @@ abstract class BaseResourceManager(poPath: String, dataPath: String)
     import cddadb.utils.JsonUtil._
     val files = ls(new File(dataPath), recursive = true, ONLY_FILE)
     files.foreach(fromFile(_).foreach(registerJsObj))
+    // 处理cpfCache
+    while (cpfCache.nonEmpty) {
+      cpfCache = cpfCache.filter(!registerJsObj(_))
+    }
   }
 
-  private def registerJsObj(jsObject: JsObject): Unit = {
-    preProcess(jsObject) match {
-      case Some(value) =>
-        val (key, obj) = value
-        var id = getField(Field.ABSTRACT, jsObject, "")(_.as[String])
-        if (id == "") {
-          postProcess(key, obj)
-          id = getField(Field.ID, jsObject, "")(_.as[String])
-        }
-        idToObj += id -> obj
-      case None =>
+  private val toRegister = Set(
+    Type.MONSTER, Type.AMMO
+  )
+
+  private def registerJsObj(jsObject: JsObject): Boolean = {
+    val tp = getField(Field.TYPE, jsObject, Type.NONE)(_.as[String])
+    if (toRegister contains tp) {
+      preProcess(jsObject, tp) match {
+        case Some(value) =>
+          val (key, obj) = value
+          var id = getStringField(Field.ABSTRACT, jsObject)
+          // abstract json 不进行postProcess
+          if (id == "") {
+            postProcess(key, obj)
+            id = getStringField(Field.ID, jsObject)
+          }
+          idToObj += id -> obj
+          true
+        case None => false
+      }
+    } else {
+      false
     }
   }
 
@@ -67,10 +82,10 @@ abstract class BaseResourceManager(poPath: String, dataPath: String)
    *
    * @see [[cddadb.common.Type]]
    */
-  private def preProcess(jsObject: JsObject): Option[(String, JsObject)] = {
+  private def preProcess(jsObject: JsObject, tp: String): Option[(String, JsObject)] = {
     var pend = jsObject
-    val tp = getField("type", jsObject, Type.NONE)(_.as[String])
 
+    // 处理json继承
     if (hasField(Field.COPY_FROM, jsObject)) {
       handleCopyFrom(jsObject) match {
         case Some(value) => pend = value
@@ -78,6 +93,11 @@ abstract class BaseResourceManager(poPath: String, dataPath: String)
       }
     }
 
+    // 翻译json
+    //FIXME: 如果子json继承description字段，将导致重复翻译
+    pend = tranObj(pend)
+
+    // 针对json类型进一步处理
     tp match {
       case Type.MONSTER => Some(processMonster(pend))
       case Type.AMMO => Some(processAmmo(pend))
@@ -100,16 +120,25 @@ abstract class BaseResourceManager(poPath: String, dataPath: String)
         case Field.PROPORTIONAL => JsNumber(n.value * v)
       }
 
-      def handleObj(path: JsPath, o: JsObject): JsObject = {
+      def handleObj(path: JsPath, toPath: JsPath, o: JsObject): JsObject = {
         var pend = o
-        o.keys.foreach {
+        val t = o.transform(path.json.pick[JsObject]).get
+        t.keys.foreach {
           key =>
-            o(key) match {
-              case x: JsObject =>
-                pend = handleObj(path \ key, x)
-              case JsNumber(value) =>
-                val tf = (path \ key).json.update(__.read[JsNumber].map(n => func(n, value)))
-                pend = obj.transform(tf).get
+            t(key) match {
+              case _: JsObject =>
+                pend = handleObj(path \ key, toPath \ key, pend)
+              case x: JsNumber =>
+                val tf = pend.transform((toPath \ key).json.pick[JsNumber]) match {
+                  case JsSuccess(_, _) =>
+                    (toPath \ key).json.update(__.read[JsNumber].map(n => func(n, x.value)))
+                  case JsError(_) =>
+                    __.json.update((toPath \ key).json.put(func(JsNumber(0), x.value)))
+                }
+                pend.transform(tf) match {
+                  case JsSuccess(value, _) => pend = value
+                  case JsError(err) => println("========" + err)
+                }
               case _ =>
             }
         }
@@ -118,9 +147,9 @@ abstract class BaseResourceManager(poPath: String, dataPath: String)
 
       val path = __ \ field
       obj.transform(path.json.pick[JsObject]) match {
-        case JsSuccess(value, _) =>
-          Some(handleObj(path, value) - field)
-        case JsError(err) =>
+        case JsSuccess(_, _) =>
+          Some(handleObj(path, __, obj) - field)
+        case JsError(_) =>
           Some(obj)
       }
     }
@@ -133,24 +162,24 @@ abstract class BaseResourceManager(poPath: String, dataPath: String)
           fieldObj.keys.foreach {
             key =>
               val tf = fieldObj(key) match {
-                case x: JsObject => field match {
-                  case Field.EXTEND => (__ \ key).json.update(__.read[JsObject].map(_ => x))
-                  case Field.DELETE => (__ \ key).json.prune
-                }
                 case x: JsArray => field match {
                   case Field.EXTEND => (__ \ key).json.update(__.read[JsArray].map(n => n ++ x))
                   case Field.DELETE => (__ \ key).json.update(__.read[JsArray].map(n => JsArray(n.value.filter(!x.value.contains(_)))))
+                }
+                case x => field match {
+                  case Field.EXTEND => (__ \ key).json.update(__.read[JsObject].map(_ => x))
+                  case Field.DELETE => (__ \ key).json.prune
                 }
               }
               pend = pend.transform(tf).get
           }
           Some(pend - field)
-        case JsError(err) =>
+        case JsError(_) =>
           Some(obj)
       }
     }
 
-    val parId = getField(Field.COPY_FROM, jsObject, "")(_.as[String])
+    val parId = getStringField(Field.COPY_FROM, jsObject)
     val parent = idToObj.get(parId)
     parent match {
       case Some(p) =>
@@ -175,45 +204,68 @@ abstract class BaseResourceManager(poPath: String, dataPath: String)
    */
   protected def postProcess(key: String, jo: JsObject): Unit
 
+  private def indexKey(tp: String, name: String): String =
+    s"$tp.$name"
+
+  private def tranObj(jsObject: JsObject): JsObject = {
+    val toTran = List(Field.NAME, Field.DESCRIPTION)
+    var res = jsObject
+    toTran.foreach {
+      field =>
+        res = tranField(res, field)
+    }
+    res
+  }
+
   /**
-   * TODO: 处理MONSTER类型的json
-   *
-   * @param jsObject
-   * @return (index key, json object)
+   * field的翻译处理
    */
+  private def tranField(jsObject: JsObject, field: String): JsObject = {
+    val tran = field match {
+      case Field.NAME =>
+        getField(Field.NAME, jsObject, "") {
+          case res: JsString =>
+            val msgid = res.as[String]
+            getTran(msgid, "")
+          case res: JsObject =>
+            var msgid = getStringField(Field.STR_SP, res)
+            msgid = getField(Field.STR, res, msgid)(_.as[String])
+            // 存在json中没有复数形式，但是翻译中有复数形式的情况，所有键值都采用单数形式吧
+            // msgid = getField("str_pl", res, msgid)(_.as[String])
+            val ctxt = getStringField(Field.CTXT, res)
+            getTran(msgid, ctxt)
+        }
+      case _ =>
+        getTran(getStringField(Field.DESCRIPTION, jsObject), "")
+    }
+    val tf = __.json.update((__ \ field).json.put(JsString(tran)))
+    jsObject.transform(tf) match {
+      case JsSuccess(value, _) => value
+      case JsError(errors) =>
+        println(errors)
+        jsObject
+    }
+  }
+
+  def getTran(msg: String, ctxt: String): String = {
+    trans.get(msg).flatMap(_.get(ctxt)).getOrElse(msg)
+  }
+
+
+  //======================各类型处理方法===================================
+  //针对每一个特定的json类型，可对json字段进行增删改
+  //返回此json对象的索引key，和处理后的json对象
+  //====================================================================
+
   private def processMonster(jsObject: JsObject): (String, JsObject) = {
-    val key = indexKey(Type.MONSTER, name(jsObject))
+    val key = indexKey(Type.MONSTER, getStringField(Field.NAME, jsObject))
     // may be do something
     key -> jsObject
   }
 
   private def processAmmo(jsObject: JsObject): (String, JsObject) = {
-    val key = indexKey(Type.AMMO, name(jsObject))
+    val key = indexKey(Type.AMMO, getStringField(Field.NAME, jsObject))
 
     key -> jsObject
   }
-
-  /**
-   * name field的翻译处理
-   */
-  private def name(jsObject: JsObject): String = {
-    getField(Field.NAME, jsObject, "") {
-      case res: JsString =>
-        val msgid = res.as[String]
-        tran(msgid, "")
-      case res: JsObject =>
-        var msgid = getField(Field.STR_SP, res, "")(_.as[String])
-        msgid = getField(Field.STR, res, msgid)(_.as[String])
-        // 存在json中没有复数形式，但是翻译中有复数形式的情况，所有键值都采用单数形式吧
-        // msgid = getField("str_pl", res, msgid)(_.as[String])
-        val ctxt = getField(Field.CTXT, res, "")(_.as[String])
-        tran(msgid, ctxt)
-    }
-  }
-
-  private def indexKey(tp: String, name: String): String =
-    s"$tp.$name"
-
-  def tran(msg: String, ctxt: String): String =
-    trans.get(msg).flatMap(_.get(ctxt)).getOrElse(msg)
 }

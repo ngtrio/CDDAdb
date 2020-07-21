@@ -35,8 +35,9 @@ class POParser extends AbstractParser with JavaTokenParsers {
     strings.foreach {
       string =>
         // TODO: 更多的转义字符替换
-        val str = string.substring(1, string.length - 1).
-          replaceAll("""\\"""", "\"")
+        val str = string.substring(1, string.length - 1)
+          .replaceAll("\\\\\"", "\"")
+          .replaceAll("\\\\n", "\n")
         res += str
     }
     res
