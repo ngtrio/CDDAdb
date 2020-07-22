@@ -5,13 +5,16 @@ import java.io.File
 import cddadb.common.{Field, Type}
 import cddadb.parser.POParser
 import cddadb.utils.JsonUtil._
+import play.api.Logger
 import play.api.libs.json._
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 
-abstract class BaseResourceManager(poPath: String, dataPath: String)
+abstract class BaseResourceManager(poPath: String, dataPath: List[String])
   extends ResourceManager {
+
+  private[this] val log = Logger(this.getClass)
 
   protected type Map[K, V] = mutable.Map[K, V]
   protected val Map: mutable.Map.type = mutable.Map
@@ -44,21 +47,28 @@ abstract class BaseResourceManager(poPath: String, dataPath: String)
   protected def loadDataFiles(): Unit = {
     import cddadb.utils.FileUtil._
     import cddadb.utils.JsonUtil._
-    val files = ls(new File(dataPath), recursive = true, ONLY_FILE)
-    files.foreach(fromFile(_).foreach(registerJsObj))
+    dataPath.foreach {
+      path =>
+        val files = ls(new File(path), recursive = true, ONLY_FILE)
+        files.foreach(fromFile(_).foreach(registerJsObj))
+    }
     // 处理cpfCache
+    //FIXME: 可以将所有json预加载，然后根据id递归处理copy-from，O(n)时间
+    // 下面这个循环最坏情况为 O(n^2)，如果继承关系在文件中正序，则为O(n)
     while (cpfCache.nonEmpty) {
       cpfCache = cpfCache.filter(!registerJsObj(_))
     }
   }
 
-  private val toRegister = Set(
-    Type.MONSTER, Type.AMMO
+  // 这里根据目前支持的type进行逐个添加，更完善后直接exclude就行了
+  private val include = Set(
+    Type.MONSTER, Type.AMMO, Type.COMESTIBLES, Type.BOOK
   )
 
   private def registerJsObj(jsObject: JsObject): Boolean = {
+    log.info(s"Registering ${jsObject \ Field.NAME}")
     val tp = getField(Field.TYPE, jsObject, Type.NONE)(_.as[String])
-    if (toRegister contains tp) {
+    if (include contains tp) {
       preProcess(jsObject, tp) match {
         case Some(value) =>
           val (key, obj) = value
@@ -66,6 +76,7 @@ abstract class BaseResourceManager(poPath: String, dataPath: String)
           // abstract json 不进行postProcess
           if (id == "") {
             postProcess(key, obj)
+            log.info(s"indexed: $key, json: $obj")
             id = getStringField(Field.ID, jsObject)
           }
           idToObj += id -> obj
@@ -97,11 +108,12 @@ abstract class BaseResourceManager(poPath: String, dataPath: String)
     //FIXME: 如果子json继承description字段，将导致重复翻译
     pend = tranObj(pend)
 
+    val key = indexKey(tp, getStringField(Field.NAME, pend))
     // 针对json类型进一步处理
     tp match {
-      case Type.MONSTER => Some(processMonster(pend))
-      case Type.AMMO => Some(processAmmo(pend))
-      case _ => None
+      case Type.MONSTER => Some(key -> processMonster(pend))
+      case Type.AMMO => Some(key -> processAmmo(pend))
+      case _ => Some(key -> pend)
     }
   }
 
@@ -137,7 +149,7 @@ abstract class BaseResourceManager(poPath: String, dataPath: String)
                 }
                 pend.transform(tf) match {
                   case JsSuccess(value, _) => pend = value
-                  case JsError(err) => println("========" + err)
+                  case JsError(err) => log.info(err.toString())
                 }
               case _ =>
             }
@@ -242,7 +254,7 @@ abstract class BaseResourceManager(poPath: String, dataPath: String)
     jsObject.transform(tf) match {
       case JsSuccess(value, _) => value
       case JsError(errors) =>
-        println(errors)
+        log.info(errors.toString())
         jsObject
     }
   }
@@ -257,15 +269,13 @@ abstract class BaseResourceManager(poPath: String, dataPath: String)
   //返回此json对象的索引key，和处理后的json对象
   //====================================================================
 
-  private def processMonster(jsObject: JsObject): (String, JsObject) = {
-    val key = indexKey(Type.MONSTER, getStringField(Field.NAME, jsObject))
+  private def processMonster(jsObject: JsObject): JsObject = {
     // may be do something
-    key -> jsObject
+    jsObject
   }
 
-  private def processAmmo(jsObject: JsObject): (String, JsObject) = {
-    val key = indexKey(Type.AMMO, getStringField(Field.NAME, jsObject))
-
-    key -> jsObject
+  private def processAmmo(jsObject: JsObject): JsObject = {
+    // may be do something
+    jsObject
   }
 }

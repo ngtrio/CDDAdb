@@ -9,10 +9,13 @@
       <sourceFolder url="file://$MODULE_DIR$/../../src/test/scala" isTestSource="true" />
       <sourceFolder url="file://$MODULE_DIR$/../../src/main/resources" type="java-resource" />
       <sourceFolder url="file://$MODULE_DIR$/../../src/test/resources" type="java-test-resource" />
+      <sourceFolder url="file://$MODULE_DIR$/../../conf" type="java-resource" />
       <excludeFolder url="file://$MODULE_DIR$/../../target" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
+    <orderEntry type="library" name="sbt: ch.qos.logback:logback-classic:1.2.3:jar" level="project" />
+    <orderEntry type="library" name="sbt: ch.qos.logback:logback-core:1.2.3:jar" level="project" />
     <orderEntry type="library" name="sbt: com.fasterxml.jackson.core:jackson-annotations:2.10.4:jar" level="project" />
     <orderEntry type="library" name="sbt: com.fasterxml.jackson.core:jackson-core:2.10.4:jar" level="project" />
     <orderEntry type="library" name="sbt: com.fasterxml.jackson.core:jackson-databind:2.10.4:jar" level="project" />
@@ -39,6 +42,7 @@
     <orderEntry type="library" name="sbt: com.typesafe.play:play-exceptions:2.8.2:jar" level="project" />
     <orderEntry type="library" name="sbt: com.typesafe.play:play-functional_2.13:2.8.1:jar" level="project" />
     <orderEntry type="library" name="sbt: com.typesafe.play:play-json_2.13:2.8.1:jar" level="project" />
+    <orderEntry type="library" name="sbt: com.typesafe.play:play-logback_2.13:2.8.2:jar" level="project" />
     <orderEntry type="library" name="sbt: com.typesafe.play:play-streams_2.13:2.8.2:jar" level="project" />
     <orderEntry type="library" name="sbt: com.typesafe.play:play_2.13:2.8.2:jar" level="project" />
     <orderEntry type="library" name="sbt: com.typesafe.play:twirl-api_2.13:1.5.0:jar" level="project" />
@@ -51,6 +55,7 @@
     <orderEntry type="library" name="sbt: javax.inject:javax.inject:1:jar" level="project" />
     <orderEntry type="library" name="sbt: joda-time:joda-time:2.10.5:jar" level="project" />
     <orderEntry type="library" name="sbt: org.checkerframework:checker-qual:2.10.0:jar" level="project" />
+    <orderEntry type="library" name="sbt: org.codehaus.groovy:groovy:3.0.4:jar" level="project" />
     <orderEntry type="library" name="sbt: org.reactivestreams:reactive-streams:1.0.3:jar" level="project" />
     <orderEntry type="library" name="sbt: org.scala-lang.modules:scala-java8-compat_2.13:0.9.1:jar" level="project" />
     <orderEntry type="library" name="sbt: org.scala-lang.modules:scala-parser-combinators_2.13:1.1.2:jar" level="project" />
