@@ -3,6 +3,8 @@
 
 # JSON格式
 [官方文档](https://github.com/CleverRaven/Cataclysm-DDA/blob/master/doc/JSON_INFO.md)
+# color格式
+[官方文档](https://github.com/CleverRaven/Cataclysm-DDA/blob/master/doc/COLOR.md)
 
 # difficulty
 ```

@@ -18,4 +18,7 @@ object Field {
   val CTXT = "ctxt"
   val STR_SP = "str_sp"
   val STR_PL = "str_pl"
+
+  val SYMBOL = "symbol"
+  val COLOR = "color"
 }

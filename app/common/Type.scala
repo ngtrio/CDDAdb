@@ -1,11 +1,11 @@
 package common
 
 object Type {
-  val BOOK = "BOOK"
-  val COMESTIBLES = "COMESTIBLE"
-  val MONSTER = "MONSTER"
-  val AMMO = "AMMO"
+  val BOOK = "book"
+  val COMESTIBLE = "comestible"
+  val MONSTER = "monster"
+  val AMMO = "ammo"
 
   // 表示类型缺省
-  val NONE = "NONE"
+  val NONE = "none"
 }

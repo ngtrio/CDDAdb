@@ -12,10 +12,13 @@ import utils.JsonUtil._
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 
-abstract class BaseResourceManager(poPath: String, dataPath: List[String])
-  extends ResourceManager {
+abstract class BaseResourceManager extends ResourceManager {
+  protected val log: Logger = Logger(this.getClass)
 
-  private[this] val log = Logger(this.getClass)
+  protected var poPath: String = "data/zh.po"
+  protected var dataPath: List[String] = List(
+    "data/cdda/data/json/monsters"
+  )
 
   protected type Map[K, V] = mutable.Map[K, V]
   protected val Map: mutable.Map.type = mutable.Map
@@ -61,12 +64,12 @@ abstract class BaseResourceManager(poPath: String, dataPath: List[String])
 
   // 这里根据目前支持的type进行逐个添加，更完善后直接exclude就行了
   private val include = Set(
-    Type.MONSTER, Type.AMMO, Type.COMESTIBLES, Type.BOOK
+    Type.MONSTER, Type.AMMO, Type.COMESTIBLE, Type.BOOK
   )
 
   private def registerJsObj(jsObject: JsObject): Boolean = {
     log.info(s"Registering ${jsObject \ Field.NAME}")
-    val tp = getField(Field.TYPE, jsObject, Type.NONE)(_.as[String])
+    val tp = getField(Field.TYPE, jsObject, Type.NONE)(_.as[String]).toLowerCase
     if (include contains tp) {
       preProcess(jsObject, tp) match {
         case Some(value) =>
@@ -207,16 +210,7 @@ abstract class BaseResourceManager(poPath: String, dataPath: List[String])
     }
   }
 
-  /**
-   * 模板方法，供子类实现，子类将根据自身的索引维护方式注册索引
-   *
-   * @param key 索引key
-   * @param jo  json对象
-   */
-  protected def postProcess(key: String, jo: JsObject): Unit
-
-  private def indexKey(tp: String, name: String): String =
-    s"$tp.$name"
+  protected def indexKey(tp: String, name: String): String = s"$tp.$name"
 
   private def tranObj(jsObject: JsObject): JsObject = {
     val toTran = List(Field.NAME, Field.DESCRIPTION)
@@ -262,12 +256,20 @@ abstract class BaseResourceManager(poPath: String, dataPath: List[String])
     trans.get(msg).flatMap(_.get(ctxt)).getOrElse(msg)
   }
 
+  //========================模板方法==================================
+  /**
+   * 供子类实现，子类将根据自身的索引维护方式注册索引
+   *
+   * @param key 索引key
+   * @param jo  json对象
+   */
+  protected def postProcess(key: String, jo: JsObject): Unit
 
-  //======================各类型处理方法===================================
+
+  //======================各类型处理方法===============================
   //针对每一个特定的json类型，可对json字段进行增删改
   //返回此json对象的索引key，和处理后的json对象
-  //====================================================================
-
+  //================================================================
   private def processMonster(jsObject: JsObject): JsObject = {
     // may be do something
     jsObject
