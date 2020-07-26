@@ -1,64 +1,82 @@
-import {Card, List, Typography} from "antd";
+import {Card, List, Spin, Typography} from "antd";
 import React from "react";
 import {request} from "../../utils/request";
+import {Link, RouteComponentProps, withRouter} from "react-router-dom";
 
-interface Props {
-    type: string
+interface Props extends RouteComponentProps<any> {
 }
 
-interface NameInfo {
-    name: string,
-    symbol: string,
-    color: string[]
+interface Info {
+    [propName: string]: any
 }
 
 interface State {
-    content: NameInfo[]
+    loading: boolean,
+    content: Info[]
 }
 
 class Showcase extends React.Component<Props, State> {
     constructor(props: Props) {
         super(props);
         this.state = {
+            loading: true,
             content: []
+        }
+        this.fetchData()
+    }
+
+    componentDidUpdate(prevProps: Readonly<Props>) {
+        if (prevProps !== this.props) {
+            this.fetchData()
         }
     }
 
-    componentWillMount() {
-        let type = this.props.type
-        let url = "http://localhost:9000/" + type
-        request(url, "GET")
-            .then(data => this.setState({
-                content: data
-            }))
-            .catch(err => console.log(err))
+    fetchData() {
+        const {type} = this.props.match.params
+        if (type !== undefined) {
+            let url = "http://localhost:9000/" + type
+            request(url, "GET")
+                .then(data => this.setState({
+                    loading: false,
+                    content: data
+                }))
+                .catch(err => console.log(err))
+        }
     }
 
     render() {
-        const {content} = this.state
+        const {content, loading} = this.state
+        const {type} = this.props.match.params
 
-        let renderItem = (item: NameInfo) => {
+        let renderItem = (item: Info) => {
             return (
-                <List.Item>
-                    <Typography.Text>
+                <Link to={"/" + type + "/" + item.name}>
+                    <List.Item>
+                        <Typography.Text>
                         <span style={{color: item.color[0], backgroundColor: item.color[1]}}>
                             {item.symbol}
                         </span> {item.name}
-                    </Typography.Text>
-                </List.Item>
+                        </Typography.Text>
+                    </List.Item>
+                </Link>
             )
         }
-
+        if (!loading) {
+            return (
+                <Card>
+                    <List
+                        dataSource={content}
+                        renderItem={item => renderItem(item)}
+                    />
+                </Card>
+            )
+        }
         return (
-            <Card hoverable={true}>
-                <List
-                    bordered
-                    dataSource={content}
-                    renderItem={item => renderItem(item)}
-                />
+            <Card>
+                <Spin/>
             </Card>
         )
     }
 }
 
-export default Showcase
+export default withRouter(Showcase)

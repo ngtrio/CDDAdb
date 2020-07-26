@@ -10,12 +10,16 @@ class PageLayout extends React.Component {
         return (
             <Row
                 id="container"
-                gutter={20}
+                gutter={16}
                 justify="center"
             >
                 <Col span={3}><SideBar/></Col>
-                <Col span={9}><InfoCard/></Col>
-                <Col span={6}><Showcase type={'monster'}/></Col>
+                <Col span={13}>
+                    <InfoCard/>
+                </Col>
+                <Col span={4}>
+                    <Showcase/>
+                </Col>
             </Row>
         )
     }

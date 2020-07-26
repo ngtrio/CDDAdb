@@ -1,5 +1,6 @@
 import React from "react";
 import {Menu} from "antd";
+import {Link} from "react-router-dom";
 
 const {SubMenu} = Menu
 
@@ -8,11 +9,11 @@ class SideBar extends React.Component {
         return (
             <Menu mode={"inline"}>
                 <Menu.Item>
-                    怪物
+                    <Link to="/monster">怪物</Link>
                 </Menu.Item>
                 <SubMenu title={"物品"}>
                     <Menu.Item>
-                        书籍
+                        <Link to="/book">书籍 </Link>
                     </Menu.Item>
                 </SubMenu>
             </Menu>
