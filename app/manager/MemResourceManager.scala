@@ -17,14 +17,14 @@ import scala.collection.mutable.ListBuffer
 class MemResourceManager extends BaseResourceManager {
 
   @Inject
-  def this(config: Configuration) {
+  def this(config: Configuration) = {
     this()
     this.poPath = config.get[String]("poPath")
     this.dataPath = config.get[Seq[String]]("dataPath").toList
   }
 
   // for direct usage
-  def this(poPath: String, dataPath: List[String]) {
+  def this(poPath: String, dataPath: List[String]) = {
     this()
     this.poPath = poPath
     this.dataPath = dataPath

@@ -8,6 +8,7 @@ import play.api.Logger
 import play.api.libs.json._
 import utils.FileUtil._
 import utils.JsonUtil._
+import utils.StringUtil.parseColor
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
@@ -109,6 +110,9 @@ abstract class BaseResourceManager extends ResourceManager {
     // 翻译json
     //FIXME: 如果子json继承description字段，将导致重复翻译
     pend = tranObj(pend)
+
+    // 处理color字段
+    pend = handleColor(pend)
 
     val key = indexKey(tp, getStringField(Field.NAME, pend))
     // 针对json类型进一步处理
@@ -220,6 +224,14 @@ abstract class BaseResourceManager extends ResourceManager {
         res = tranField(res, field)
     }
     res
+  }
+
+  private def handleColor(obj: JsObject): JsObject = {
+    val tf = (__ \ Field.COLOR).json.update(__.read[JsString].map(str => JsArray(parseColor(str.as[String]).map(JsString))))
+    obj.transform(tf) match {
+      case JsSuccess(value, _) => value
+      case JsError(_) => obj
+    }
   }
 
   /**

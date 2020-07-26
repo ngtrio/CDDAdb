@@ -18,7 +18,6 @@ class AllInOneRepository @Inject()(@Named("memrm") manager: ResourceManager) ext
 
   override def listNameInfo(tp: String): JsArray = {
     import utils.JsonUtil._
-    import utils.StringUtil._
 
     val objs = manager.listByType(tp)
     val res = ListBuffer[JsObject]()
@@ -28,7 +27,7 @@ class AllInOneRepository @Inject()(@Named("memrm") manager: ResourceManager) ext
         val `type` = getStringField(Field.TYPE, obj).toLowerCase
         val name = getStringField(Field.NAME, obj)
         val symbol = getStringField(Field.SYMBOL, obj)
-        val color = parseColor(getStringField(Field.COLOR, obj))
+        val color = getField(Field.COLOR, obj, JsArray())(_.as[JsArray])
 
         if (`type` == tp) {
           res += Json.obj(
