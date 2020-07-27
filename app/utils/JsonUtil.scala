@@ -36,8 +36,16 @@ object JsonUtil {
     }
   }
 
-  def getStringField(field: String, jsValue: JsValue): String = {
+  def getString(field: String)(implicit jsValue: JsValue): String = {
     getField(field, jsValue, "")(_.as[String])
+  }
+
+  def getNumber(field: String)(implicit jsValue: JsValue): BigDecimal = {
+    getField(field, jsValue, BigDecimal(0))(_.as[BigDecimal])
+  }
+
+  def getArray(field: String)(implicit jsValue: JsValue): Array[JsValue] = {
+    getField(field, jsValue, Array[JsValue]())(_.as[Array[JsValue]])
   }
 
   def hasField(field: String, jsValue: JsValue): Boolean = {

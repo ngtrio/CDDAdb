@@ -7,6 +7,9 @@
 [官方文档](https://github.com/CleverRaven/Cataclysm-DDA/blob/master/doc/COLOR.md)
 
 # difficulty
+
+### level
+
 ```
 if( type->difficulty < 3 ) {
             difficulty_str = _( "<color_light_gray>Minimal threat.</color>" );
@@ -22,7 +25,20 @@ if( type->difficulty < 3 ) {
             difficulty_str = _( "<color_red>Fatally dangerous!</color>" );
         }
 ```
+### calculate
+
+```
+difficulty = ( melee_skill + 1 ) * melee_dice * ( bonus_cut + melee_sides ) * 0.04 +
+                 ( sk_dodge + 1 ) * ( 3 + armor_bash + armor_cut ) * 0.04 +
+                 ( difficulty_base + special_attacks.size() + 8 * emit_fields.size() );
+    difficulty *= ( hp + speed - attack_cost + ( morale + agro ) * 0.1 ) * 0.01 +
+                  ( vision_day + 2 * vision_night ) * 0.01;
+```
+
+
+
 # volume to size
+
 ```
 static creature_size volume_to_size( const units::volume &vol )
 {

@@ -23,10 +23,10 @@ class AllInOneRepository @Inject()(@Named("memrm") manager: ResourceManager) ext
     val res = ListBuffer[JsObject]()
 
     objs.foreach {
-      obj =>
-        val `type` = getStringField(Field.TYPE, obj).toLowerCase
-        val name = getStringField(Field.NAME, obj)
-        val symbol = getStringField(Field.SYMBOL, obj)
+      implicit obj =>
+        val `type` = getString(Field.TYPE).toLowerCase
+        val name = getString(Field.NAME)
+        val symbol = getString(Field.SYMBOL)
         val color = getField(Field.COLOR, obj, JsArray())(_.as[JsArray])
 
         if (`type` == tp) {

@@ -33,11 +33,6 @@ class MemResourceManager extends BaseResourceManager {
   // key -> JsObject
   private[this] val idx = Map[String, JsObject]()
 
-  override def update(): Unit = {
-    updateTrans()
-    loadDataFiles()
-  }
-
   override protected def postProcess(key: String, obj: JsObject): Unit = {
     idx += key -> obj
     log.info(s"registered: $key")

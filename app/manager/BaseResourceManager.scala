@@ -3,28 +3,21 @@ package manager
 import java.io.File
 
 import common.{Field, Type}
-import parser.POParser
 import play.api.Logger
 import play.api.libs.json._
 import utils.FileUtil._
 import utils.JsonUtil._
 import utils.StringUtil.parseColor
 
-import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 
 abstract class BaseResourceManager extends ResourceManager {
   protected val log: Logger = Logger(this.getClass)
 
-  protected var poPath: String = "data/zh.po"
-  protected var dataPath: List[String] = List(
-    "data/cdda/data/json/monsters"
-  )
+  protected var poPath: String = _
+  protected var dataPath: List[String] = _
 
-  protected type Map[K, V] = mutable.Map[K, V]
-  protected val Map: mutable.Map.type = mutable.Map
-
-  private[this] val trans = Map[String, Map[String, String]]()
+  private[this] val trans = TransManager
 
   // id -> json obj
   private[this] val idToObj = Map[String, JsObject]()
@@ -32,28 +25,11 @@ abstract class BaseResourceManager extends ResourceManager {
   //copy-from obj cache
   private[this] var cpfCache = ListBuffer[JsObject]()
 
-  protected def updateTrans(): Unit = {
-    val poParser = POParser()
-    val res = poParser.fromFile(poPath).parse
-    res.foreach {
-      case POParser.SingleTrans(msgctxt, msgid, msgstr) =>
-        trans.get(msgid) match {
-          case Some(v) => v += msgctxt -> msgstr
-          case None => trans += msgid -> Map(msgctxt -> msgstr)
-        }
-      case POParser.PluralTrans(msgctxt, msgid, _, msgstr) =>
-        trans.get(msgid) match {
-          case Some(v) => v += msgctxt -> msgstr.head._2
-          case None => trans += msgid -> Map(msgctxt -> msgstr.head._2)
-        }
-    }
-  }
-
-  protected def loadDataFiles(): Unit = {
+  override def update(): Unit = {
     dataPath.foreach {
       path =>
         val files = ls(new File(path), recursive = true, ONLY_FILE)
-        files.foreach(fromFile(_).foreach(registerJsObj))
+        files.foreach(fromFile(_).foreach(registerJsObj(_)))
     }
     // 处理cpfCache
     //FIXME: 可以将所有json预加载，然后根据id递归处理copy-from，O(n)时间
@@ -68,31 +44,37 @@ abstract class BaseResourceManager extends ResourceManager {
     Type.MONSTER, Type.AMMO, Type.COMESTIBLE, Type.BOOK
   )
 
-  private def registerJsObj(jsObject: JsObject): Boolean = {
+  private def registerJsObj(implicit jsObject: JsObject): Boolean = {
     log.info(s"Registering ${jsObject \ Field.NAME}")
     val tp = getField(Field.TYPE, jsObject, Type.NONE)(_.as[String]).toLowerCase
+
     if (include contains tp) {
       preProcess(jsObject, tp) match {
         case Some(value) =>
           val (key, obj) = value
-          var id = getStringField(Field.ABSTRACT, jsObject)
+          var id = getString(Field.ABSTRACT)
+
           // abstract json 不进行postProcess
           if (id == "") {
             postProcess(key, obj)
             log.info(s"indexed: $key, json: $obj")
-            id = getStringField(Field.ID, jsObject)
+            id = getString(Field.ID)
           }
+
           idToObj += id -> obj
           true
+        // json继承失败
         case None => false
       }
     } else {
+      // 不注册该类型json
       false
     }
   }
 
   /**
    * 预处理json的内容，比如json inheritance，同时对json进行分类
+   * 本方法返回的JsObject就是此后展示层接受的数据，所以任何字段处理都必须在此处理完
    *
    * @see [[Type]]
    */
@@ -114,11 +96,15 @@ abstract class BaseResourceManager extends ResourceManager {
     // 处理color字段
     pend = handleColor(pend)
 
-    val key = indexKey(tp, getStringField(Field.NAME, pend))
-    // 针对json类型进一步处理
+    // 生成索引key
+    val key = indexKey(tp, getString(Field.NAME)(pend))
+
+    import Type._
+    import handler.HandlerImplicit._
+
+    // 按需对各Type做进一步处理
     tp match {
-      case Type.MONSTER => Some(key -> processMonster(pend))
-      case Type.AMMO => Some(key -> processAmmo(pend))
+      case MONSTER => Some(key -> pend.process[Monster])
       case _ => Some(key -> pend)
     }
   }
@@ -130,7 +116,7 @@ abstract class BaseResourceManager extends ResourceManager {
    * @param jsObject
    * @return 返回一个继承父json后的json对象
    */
-  private def handleCopyFrom(jsObject: JsObject): Option[JsObject] = {
+  private def handleCopyFrom(implicit jsObject: JsObject): Option[JsObject] = {
     // 处理relative和proportional
     def valueInherit(obj: JsObject, field: String) = {
       val func = (n: JsNumber, v: BigDecimal) => field match {
@@ -197,7 +183,7 @@ abstract class BaseResourceManager extends ResourceManager {
       }
     }
 
-    val parId = getStringField(Field.COPY_FROM, jsObject)
+    val parId = getString(Field.COPY_FROM)
     val parent = idToObj.get(parId)
     parent match {
       case Some(p) =>
@@ -237,7 +223,7 @@ abstract class BaseResourceManager extends ResourceManager {
   /**
    * field的翻译处理
    */
-  private def tranField(jsObject: JsObject, field: String): JsObject = {
+  private def tranField(implicit jsObject: JsObject, field: String): JsObject = {
     val tran = field match {
       case Field.NAME =>
         getField(Field.NAME, jsObject, "") {
@@ -245,15 +231,15 @@ abstract class BaseResourceManager extends ResourceManager {
             val msgid = res.as[String]
             getTran(msgid, "")
           case res: JsObject =>
-            var msgid = getStringField(Field.STR_SP, res)
+            var msgid = getString(Field.STR_SP)(res)
             msgid = getField(Field.STR, res, msgid)(_.as[String])
             // 存在json中没有复数形式，但是翻译中有复数形式的情况，所有键值都采用单数形式吧
             // msgid = getField("str_pl", res, msgid)(_.as[String])
-            val ctxt = getStringField(Field.CTXT, res)
+            val ctxt = getString(Field.CTXT)(res)
             getTran(msgid, ctxt)
         }
       case _ =>
-        getTran(getStringField(Field.DESCRIPTION, jsObject), "")
+        getTran(getString(Field.DESCRIPTION), "")
     }
     val tf = __.json.update((__ \ field).json.put(JsString(tran)))
     jsObject.transform(tf) match {
@@ -264,9 +250,7 @@ abstract class BaseResourceManager extends ResourceManager {
     }
   }
 
-  def getTran(msg: String, ctxt: String): String = {
-    trans.get(msg).flatMap(_.get(ctxt)).getOrElse(msg)
-  }
+  def getTran(msg: String, ctxt: String): String = trans.get(msg, ctxt)
 
   //========================模板方法==================================
   /**
@@ -276,19 +260,4 @@ abstract class BaseResourceManager extends ResourceManager {
    * @param jo  json对象
    */
   protected def postProcess(key: String, jo: JsObject): Unit
-
-
-  //======================各类型处理方法===============================
-  //针对每一个特定的json类型，可对json字段进行增删改
-  //返回此json对象的索引key，和处理后的json对象
-  //================================================================
-  private def processMonster(jsObject: JsObject): JsObject = {
-    // may be do something
-    jsObject
-  }
-
-  private def processAmmo(jsObject: JsObject): JsObject = {
-    // may be do something
-    jsObject
-  }
 }
