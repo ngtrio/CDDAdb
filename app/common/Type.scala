@@ -1,6 +1,6 @@
 package common
 
-object Type {
+trait TypeLiteral {
   val BOOK = "book"
   val COMESTIBLE = "comestible"
   val MONSTER = "monster"
@@ -9,3 +9,9 @@ object Type {
   // 表示类型缺省
   val NONE = "none"
 }
+
+trait Type {
+  type Monster
+}
+
+object Type extends TypeLiteral with Type {}
