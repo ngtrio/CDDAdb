@@ -69,7 +69,7 @@ object MonsterHandler extends Handler[Monster] {
         case x if x <= 483.75 => tran("large", "size adj")
         case _ => tran("huge", "size adj")
       }
-      value + s"L($desc)"
+      s"${value}L($desc)"
     } else {
       vol
     }

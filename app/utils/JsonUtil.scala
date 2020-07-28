@@ -2,9 +2,12 @@ package utils
 
 import java.io.{File, FileInputStream, FileNotFoundException}
 
+import play.api.Logger
 import play.api.libs.json._
 
 object JsonUtil {
+
+  private val log = Logger(this.getClass)
 
   /**
    * 返回一个json文件中的一个或多个json object
@@ -24,7 +27,7 @@ object JsonUtil {
       }
     } catch {
       case _: Exception =>
-        println("skipped: " + file.getName)
+        log.info("skipped: " + file.getName)
         List.empty[JsObject]
     }
   }
@@ -37,15 +40,24 @@ object JsonUtil {
   }
 
   def getString(field: String)(implicit jsValue: JsValue): String = {
-    getField(field, jsValue, "")(_.as[String])
+    getField(field, jsValue, "") {
+      case JsString(value) => value
+      case _ => throw new Exception(s"field: $field is not a string")
+    }
   }
 
   def getNumber(field: String)(implicit jsValue: JsValue): BigDecimal = {
-    getField(field, jsValue, BigDecimal(0))(_.as[BigDecimal])
+    getField(field, jsValue, BigDecimal(0)) {
+      case JsNumber(value) => value
+      case _ => throw new Exception(s"field: $field is not a number")
+    }
   }
 
   def getArray(field: String)(implicit jsValue: JsValue): Array[JsValue] = {
-    getField(field, jsValue, Array[JsValue]())(_.as[Array[JsValue]])
+    getField(field, jsValue, Array[JsValue]()) {
+      case JsArray(value) => value.toArray
+      case _ => throw new Exception(s"field: $field is not an array")
+    }
   }
 
   def hasField(field: String, jsValue: JsValue): Boolean = {

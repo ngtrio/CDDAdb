@@ -19,8 +19,9 @@ abstract class BaseResourceManager extends ResourceManager {
 
   private[this] val trans = TransManager
 
-  // id -> json obj
-  private[this] val idToObj = Map[String, JsObject]()
+  // typeId -> json obj
+  // 不同type可能有相同id
+  private[this] val typeIdToObj = Map[String, JsObject]()
 
   //copy-from obj cache
   private[this] var cpfCache = ListBuffer[JsObject]()
@@ -40,35 +41,45 @@ abstract class BaseResourceManager extends ResourceManager {
   }
 
   // 这里根据目前支持的type进行逐个添加，更完善后直接exclude就行了
-  private val include = Set(
-    Type.MONSTER, Type.AMMO, Type.COMESTIBLE, Type.BOOK
+  private val blacklist = Set[String](
+    Type.EFFECT_TYPE, Type.MIGRATION, Type.TALK_TOPIC,
+    Type.OVERMAP_TERRAIN
   )
 
   private def registerJsObj(implicit jsObject: JsObject): Boolean = {
-    log.info(s"Registering ${jsObject \ Field.NAME}")
+    val name = jsObject \ Field.NAME
+    log.info(s"registering: $name")
+
     val tp = getField(Field.TYPE, jsObject, Type.NONE)(_.as[String]).toLowerCase
 
-    if (include contains tp) {
-      preProcess(jsObject, tp) match {
-        case Some(value) =>
-          val (key, obj) = value
-          var id = getString(Field.ABSTRACT)
+    try {
+      if (blacklist.contains(tp)) {
+        false // 不注册该类型json
+      } else {
+        preProcess(jsObject, tp) match {
+          case Some(value) =>
+            val (key, obj) = value
+            var id = getString(Field.ABSTRACT)
 
-          // abstract json 不进行postProcess
-          if (id == "") {
-            postProcess(key, obj)
-            log.info(s"indexed: $key, json: $obj")
-            id = getString(Field.ID)
-          }
+            // abstract json 不进行postProcess
+            if (id == "") {
+              postProcess(key, obj)
+              log.info(s"indexed: $key, json: $obj")
+              id = getString(Field.ID)
+            }
 
-          idToObj += id -> obj
-          true
-        // json继承失败
-        case None => false
+            typeIdToObj += s"$tp.$id" -> obj
+
+            true
+          // json继承失败
+          case None => false
+        }
       }
-    } else {
-      // 不注册该类型json
-      false
+    } catch {
+      case e: Exception =>
+        e.printStackTrace()
+        log.error(s"register fail, err: $e, obj: $jsObject")
+        false
     }
   }
 
@@ -103,6 +114,7 @@ abstract class BaseResourceManager extends ResourceManager {
     import handler.HandlerImplicit._
 
     // 按需对各Type做进一步处理
+    // 只做特异性处理
     tp match {
       case MONSTER => Some(key -> pend.process[Monster])
       case _ => Some(key -> pend)
@@ -119,7 +131,7 @@ abstract class BaseResourceManager extends ResourceManager {
   private def handleCopyFrom(implicit jsObject: JsObject): Option[JsObject] = {
     // 处理relative和proportional
     def valueInherit(obj: JsObject, field: String) = {
-      val func = (n: JsNumber, v: BigDecimal) => field match {
+      val valIhrFunc = (n: JsNumber, v: BigDecimal) => field match {
         case Field.RELATIVE => JsNumber(n.value + v)
         case Field.PROPORTIONAL => JsNumber(n.value * v)
       }
@@ -135,9 +147,9 @@ abstract class BaseResourceManager extends ResourceManager {
               case x: JsNumber =>
                 val tf = pend.transform((toPath \ key).json.pick[JsNumber]) match {
                   case JsSuccess(_, _) =>
-                    (toPath \ key).json.update(__.read[JsNumber].map(n => func(n, x.value)))
+                    (toPath \ key).json.update(__.read[JsNumber].map(n => valIhrFunc(n, x.value)))
                   case JsError(_) =>
-                    __.json.update((toPath \ key).json.put(func(JsNumber(0), x.value)))
+                    __.json.update((toPath \ key).json.put(valIhrFunc(JsNumber(0), x.value)))
                 }
                 pend.transform(tf) match {
                   case JsSuccess(value, _) => pend = value
@@ -165,26 +177,30 @@ abstract class BaseResourceManager extends ResourceManager {
         case JsSuccess(fieldObj, _) =>
           fieldObj.keys.foreach {
             key =>
-              val tf = fieldObj(key) match {
-                case x: JsArray => field match {
-                  case Field.EXTEND => (__ \ key).json.update(__.read[JsArray].map(n => n ++ x))
-                  case Field.DELETE => (__ \ key).json.update(__.read[JsArray].map(n => JsArray(n.value.filter(!x.value.contains(_)))))
-                }
-                case x => field match {
-                  case Field.EXTEND => (__ \ key).json.update(__.read[JsObject].map(_ => x))
-                  case Field.DELETE => (__ \ key).json.prune
-                }
+              val v = fieldObj(key)
+              pend = pend \ key match {
+                case JsDefined(_) =>
+                  val tf = field match {
+                    case Field.EXTEND =>
+                      // 如果出错就说明extend的字段在父json中可以以非数组形式存在（文档没说，遇到bug再改）
+                      (__ \ key).json.update(__.read[JsArray].map(arr => arr ++ v.as[JsArray]))
+                    case Field.DELETE =>
+                      (__ \ key).json.prune
+                  }
+                  pend.transform(tf).get
+                case JsUndefined() =>
+                  if (field == Field.EXTEND) pend ++ Json.obj(key -> v)
+                  else pend
               }
-              pend = pend.transform(tf).get
           }
           Some(pend - field)
-        case JsError(_) =>
-          Some(obj)
+        case JsError(_) => Some(pend)
       }
     }
 
+    val tp = getString(Field.TYPE).toLowerCase
     val parId = getString(Field.COPY_FROM)
-    val parent = idToObj.get(parId)
+    val parent = typeIdToObj.get(s"$tp.$parId")
     parent match {
       case Some(p) =>
         val newObj = p ++ jsObject - Field.COPY_FROM - Field.ABSTRACT
@@ -196,6 +212,7 @@ abstract class BaseResourceManager extends ResourceManager {
         } yield l
       case None =>
         cpfCache += jsObject
+        log.info(s"copy-from handle failed, wait for another loop, parent: ${s"$tp.$parId"} json: $jsObject")
         None // parent还没加载，先缓存起来后续处理
     }
   }
@@ -224,23 +241,25 @@ abstract class BaseResourceManager extends ResourceManager {
    * field的翻译处理
    */
   private def tranField(implicit jsObject: JsObject, field: String): JsObject = {
-    val tran = field match {
-      case Field.NAME =>
-        getField(Field.NAME, jsObject, "") {
-          case res: JsString =>
-            val msgid = res.as[String]
-            getTran(msgid, "")
-          case res: JsObject =>
-            var msgid = getString(Field.STR_SP)(res)
-            msgid = getField(Field.STR, res, msgid)(_.as[String])
-            // 存在json中没有复数形式，但是翻译中有复数形式的情况，所有键值都采用单数形式吧
-            // msgid = getField("str_pl", res, msgid)(_.as[String])
-            val ctxt = getString(Field.CTXT)(res)
-            getTran(msgid, ctxt)
-        }
-      case _ =>
-        getTran(getString(Field.DESCRIPTION), "")
+    val tran = getField(field, jsObject, "") {
+      case res: JsString =>
+        val msgid = res.as[String]
+        getTran(msgid, "")
+      case res: JsObject =>
+        var msgid = getString(Field.STR_SP)(res)
+        msgid = getField(Field.STR, res, msgid)(_.as[String])
+        // 存在json中没有复数形式，但是翻译中有复数形式的情况，所有键值都采用单数形式吧
+        // msgid = getField("str_pl", res, msgid)(_.as[String])
+        val ctxt = getString(Field.CTXT)(res)
+        getTran(msgid, ctxt)
+      case res: JsArray =>
+        val msgid = res.value(0).as[String]
+        getTran(msgid, "")
+      // case res: _ =>
+      // log.warn(s"name format not supported, format: $res")
+      // FIXME: trans to what?
     }
+
     val tf = __.json.update((__ \ field).json.put(JsString(tran)))
     jsObject.transform(tf) match {
       case JsSuccess(value, _) => value
