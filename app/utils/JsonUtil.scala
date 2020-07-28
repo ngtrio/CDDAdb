@@ -60,10 +60,18 @@ object JsonUtil {
     }
   }
 
-  def hasField(field: String, jsValue: JsValue): Boolean = {
+  def hasField(field: String)(implicit jsValue: JsValue): Boolean = {
     jsValue \ field match {
       case _: JsDefined => true
       case _: JsUndefined => false
+    }
+  }
+
+  def updateField[T <: JsValue](path: JsPath, jsValue: JsValue, value: T): JsValue = {
+    val tf = path.json.update(__.json.put(value))
+    jsValue.transform(tf) match {
+      case JsSuccess(value, _) => value
+      case JsError(_) => jsValue
     }
   }
 }

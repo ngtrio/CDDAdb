@@ -1,6 +1,8 @@
 package common
 
 trait TypeLiteral {
+  val ITEM = "item"
+
   // subtype of item
   val BOOK = "book"
   val COMESTIBLE = "comestible"
@@ -24,6 +26,8 @@ trait TypeLiteral {
 
 trait Type {
   type Monster
+  type Item
+  type Recipe
 }
 
 object Type extends TypeLiteral with Type {}

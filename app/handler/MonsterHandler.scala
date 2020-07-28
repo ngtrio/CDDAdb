@@ -1,20 +1,39 @@
 package handler
 
 import common.Field._
-import common.Type.Monster
+import common.Type._
 import manager.TransManager
 import play.api.libs.json.{JsArray, JsObject, Json}
 import utils.JsonUtil._
 
-object MonsterHandler extends Handler[Monster] {
-  override def handle(obj: JsObject): JsObject = {
-    val pend = fill(obj)
-    val diff = difficulty(pend)
-    val vol = volume(pend)
-    pend ++ Json.obj(
-      DIFFICULTY -> diff,
-      VOLUME -> vol
-    )
+object MonsterHandler extends Handler[Monster]
+  with CopyFromSupport with I18nSupport {
+
+  override var prefix = s"$MONSTER."
+
+  override def handle(obj: JsObject): Option[(List[String], JsObject)] = {
+    val ident = getString(ID)(obj)
+
+    handleCopyFrom(obj, ident) match {
+      case Some(value) =>
+        var pend = tranObj(value, List(NAME, DESCRIPTION))
+        pend = fill(pend)
+        val diff = difficulty(pend)
+        val vol = volume(pend)
+
+        pend = pend ++ Json.obj(
+          DIFFICULTY -> diff,
+          VOLUME -> vol
+        )
+
+        if (!hasField(ABSTRACT)(pend)) {
+          val name = getString(NAME)(pend).toLowerCase
+          idxKeys += s"$prefix$name"
+        }
+
+        Some(idxKeys.toList -> pend)
+      case None => None
+    }
   }
 
   private def difficulty(implicit obj: JsObject): String = {

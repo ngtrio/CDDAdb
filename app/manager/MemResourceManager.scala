@@ -33,9 +33,12 @@ class MemResourceManager extends BaseResourceManager {
   // key -> JsObject
   private[this] val idx = Map[String, JsObject]()
 
-  override protected def postProcess(key: String, obj: JsObject): Unit = {
-    idx += key -> obj
-    log.info(s"registered: $key")
+  override protected def postProcess(keys: List[String], obj: JsObject): Unit = {
+    keys.foreach {
+      key =>
+        idx += key -> obj
+        log.info(s"registered: $key")
+    }
   }
 
   override def getByTypeName(tp: String, name: String): JsObject = {

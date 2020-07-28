@@ -7,7 +7,8 @@ class MemResourceManagerTest extends AnyWordSpecLike {
     val manager = new MemResourceManager(
       poPath = "data/zh.po",
       dataPath = List(
-        "data/cdda/data/json",
+        //        "data/cdda/data/json/items",
+        "data/cdda/data/json/monsters",
         "data/cdda/data/core"))
     manager.update()
   }

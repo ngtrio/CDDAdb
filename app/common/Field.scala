@@ -49,4 +49,7 @@ object Field {
   val VISION_DAY = "vision_day"
   val VISION_NIGHT = "vision_night"
   val DIFFICULTY = "difficulty"
+
+  val RESULT = "result"
+  val ID_SUFFIX = "id_suffix"
 }
