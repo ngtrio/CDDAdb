@@ -6,12 +6,21 @@ import play.api.libs.json._
 import utils.JsonUtil._
 
 import scala.collection.mutable
+import scala.collection.mutable.ListBuffer
 
 trait CopyFromSupport {
   protected val log: Logger = Logger(this.getClass)
 
-  //FIXME： 释放此处内存
-  protected val objCache: mutable.Map[String, JsObject] = mutable.Map[String, JsObject]()
+  protected var objCache: mutable.Map[String, JsObject]
+  //copy-from obj cache
+  //FIXME: 可以将所有json预加载，然后根据id递归处理copy-from，O(n)时间
+  // 目前这个方案最坏情况为 O(n^2)，如果继承关系在文件中正序，则为O(n)
+  var cpfCache: ListBuffer[JsObject]
+
+  def clear(): Unit = {
+    objCache.clear()
+    cpfCache.clear()
+  }
 
   /**
    * 处理json inheritance
@@ -112,6 +121,7 @@ trait CopyFromSupport {
           log.debug(s"copy-from handle success, json: ${res.get}")
           res
         case None =>
+          cpfCache += jsObject // parent还没加载，先缓存起来后续处理
           log.debug(s"copy-from handle fail, wait for another loop, parent: $parId, json: $jsObject")
           None
       }

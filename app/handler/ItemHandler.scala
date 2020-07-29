@@ -5,22 +5,31 @@ import common.Type._
 import play.api.libs.json.JsObject
 import utils.JsonUtil._
 
-object ItemHandler extends Handler[Item]
-  with CopyFromSupport with I18nSupport {
-  override var prefix = s"$ITEM."
+import scala.collection.mutable
+import scala.collection.mutable.ListBuffer
+
+object ItemHandler extends Handler
+  with CopyFromSupport with I18nSupport with ColorSymbolSupport {
+  override protected var prefix = s"$ITEM."
+  override protected var objCache: mutable.Map[String, JsObject] = mutable.Map()
+  override var cpfCache: ListBuffer[JsObject] = ListBuffer()
 
   override def handle(obj: JsObject): Option[(List[String], JsObject)] = {
-    val tp = getString(TYPE)(obj)
-    val ident = getString(ID)(obj)
-    handleCopyFrom(obj, ident) match {
-      case Some(value) =>
-        var pend = tranObj(value, List(NAME, DESCRIPTION))
-        if (!hasField(ABSTRACT)(pend)) {
-          val name = getString(NAME)(pend).toLowerCase
-          idxKeys += s"$prefix$tp.$name"
-        }
-        Some(idxKeys.toList -> pend)
-      case None => None
-    }
+    val tp = getString(TYPE)(obj).toLowerCase
+    if (ITEM_TYPES.contains(tp)) {
+      val ident = getString(ID)(obj)
+      handleCopyFrom(obj, ident).map {
+        value =>
+          implicit var pend: JsObject = tranObj(value, NAME, DESCRIPTION)
+          pend = handleColor
+
+          val idxKeys = ListBuffer[String]()
+          if (!hasField(ABSTRACT)) {
+            val name = getString(NAME)
+            idxKeys += s"$prefix$tp.$name"
+          }
+          idxKeys.toList -> pend
+      }
+    } else None
   }
 }

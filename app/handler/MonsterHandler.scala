@@ -2,38 +2,43 @@ package handler
 
 import common.Field._
 import common.Type._
-import manager.TransManager
 import play.api.libs.json.{JsArray, JsObject, Json}
 import utils.JsonUtil._
 
-object MonsterHandler extends Handler[Monster]
-  with CopyFromSupport with I18nSupport {
+import scala.collection.mutable
+import scala.collection.mutable.ListBuffer
 
-  override var prefix = s"$MONSTER."
+object MonsterHandler extends Handler
+  with CopyFromSupport with I18nSupport with ColorSymbolSupport {
+  override protected var prefix = s"$MONSTER."
+  override protected var objCache: mutable.Map[String, JsObject] = mutable.Map()
+  override var cpfCache: ListBuffer[JsObject] = ListBuffer()
 
   override def handle(obj: JsObject): Option[(List[String], JsObject)] = {
-    val ident = getString(ID)(obj)
+    val tp = getString(TYPE)(obj).toLowerCase
+    if (tp == MONSTER) {
+      val ident = getString(ID)(obj)
+      handleCopyFrom(obj, ident).map {
+        value =>
+          implicit var pend: JsObject = tranObj(value, NAME, DESCRIPTION)
+          pend = handleColor
+          pend = fill
+          val diff = difficulty
+          val vol = volume
+          pend = pend ++ Json.obj(
+            DIFFICULTY -> diff,
+            VOLUME -> vol
+          )
 
-    handleCopyFrom(obj, ident) match {
-      case Some(value) =>
-        var pend = tranObj(value, List(NAME, DESCRIPTION))
-        pend = fill(pend)
-        val diff = difficulty(pend)
-        val vol = volume(pend)
+          val idxKeys = ListBuffer[String]()
+          if (!hasField(ABSTRACT)(pend)) {
+            val name = getString(NAME)(pend).toLowerCase
+            idxKeys += s"$prefix$name"
+          }
 
-        pend = pend ++ Json.obj(
-          DIFFICULTY -> diff,
-          VOLUME -> vol
-        )
-
-        if (!hasField(ABSTRACT)(pend)) {
-          val name = getString(NAME)(pend).toLowerCase
-          idxKeys += s"$prefix$name"
-        }
-
-        Some(idxKeys.toList -> pend)
-      case None => None
-    }
+          idxKeys.toList -> pend
+      }
+    } else None
   }
 
   private def difficulty(implicit obj: JsObject): String = {
@@ -62,7 +67,7 @@ object MonsterHandler extends Handler[Monster]
     s"$value($level)"
   }
 
-  private def difLevel(difficulty: BigDecimal): String = {
+  private def difLevel(implicit difficulty: BigDecimal): String = {
     val str = difficulty match {
       case x if x < 3 => tran("<color_light_gray>Minimal threat.</color>")
       case x if x < 10 => tran("<color_light_gray>Mildly dangerous.</color>")
@@ -71,7 +76,9 @@ object MonsterHandler extends Handler[Monster]
       case x if x < 50 => tran("<color_red>Extremely dangerous.</color>")
       case _ => tran("<color_red>Fatally dangerous!</color>")
     }
-    str.replaceAll("<.*?>", "")
+    str
+    //不用替换标签，前端加样式还能显示颜色
+    //str.replaceAll("<.*?>", "")
   }
 
   private def volume(implicit obj: JsObject): String = {
@@ -94,10 +101,7 @@ object MonsterHandler extends Handler[Monster]
     }
   }
 
-  private def tran(toTran: String, ctxt: String = "")(implicit trans: TransManager.type) =
-    trans.get(toTran, ctxt)
-
-  private def fill(obj: JsObject): JsObject = {
+  private def fill(implicit obj: JsObject): JsObject = {
     // default values see https://github.com/CleverRaven/Cataclysm-DDA/blob/master/src/mtype.h
     val toFill = Json.obj(
       ARMOR_CUT -> 0,

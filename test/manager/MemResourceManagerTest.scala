@@ -1,5 +1,6 @@
 package manager
 
+import handler.Handler
 import org.scalatest.wordspec.AnyWordSpecLike
 
 class MemResourceManagerTest extends AnyWordSpecLike {
@@ -10,6 +11,9 @@ class MemResourceManagerTest extends AnyWordSpecLike {
         //        "data/cdda/data/json/items",
         "data/cdda/data/json/monsters",
         "data/cdda/data/core"))
-    manager.update()
+
+    manager
+      .withHandler(Handler.handlers: _*)
+      .update()
   }
 }
