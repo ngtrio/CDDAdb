@@ -3,11 +3,11 @@ package manager
 import java.io.File
 
 import common.{Field, Type}
+import handler.{CopyFromSupport, Handler}
 import play.api.Logger
 import play.api.libs.json._
 import utils.FileUtil._
 import utils.JsonUtil._
-import utils.StringUtil.parseColor
 
 import scala.collection.mutable.ListBuffer
 
@@ -17,53 +17,47 @@ abstract class BaseResourceManager extends ResourceManager {
   protected var poPath: String = _
   protected var dataPath: List[String] = _
 
-  //copy-from obj cache
-  private[this] var cpfCache = ListBuffer[JsObject]()
+
+  private[this] val handlerPipe = ListBuffer[Handler]()
+
+  override def withHandler(handler: Handler*): this.type = {
+    handlerPipe ++= handler
+    this
+  }
 
   override def update(): Unit = {
     dataPath.foreach {
       path =>
         val files = ls(new File(path), recursive = true, ONLY_FILE)
-        files.foreach(fromFile(_).foreach(registerJsObj(_)))
+        files.foreach(fromFile(_).foreach(registerJsObj))
     }
-    // 处理cpfCache
-    //FIXME: 可以将所有json预加载，然后根据id递归处理copy-from，O(n)时间
-    // 下面这个循环最坏情况为 O(n^2)，如果继承关系在文件中正序，则为O(n)
-    while (cpfCache.nonEmpty) {
-      cpfCache = cpfCache.filter(!registerJsObj(_))
+    finish()
+  }
+
+  // 处理缓存下来的copy-from obj
+  private def finish(): Unit = {
+    handlerPipe.foreach {
+      case handler: CopyFromSupport =>
+        handler.cpfCache.foreach(registerJsObj)
+        handler.clear()
+      case _ =>
     }
   }
 
-  // 这里根据目前支持的type进行逐个添加，更完善后直接exclude就行了
-  private val whitelist = Set[String](
-    Type.MONSTER, Type.COMESTIBLE, Type.AMMO, Type.BOOK
-  )
-
-  private def registerJsObj(implicit jsObject: JsObject): Boolean = {
+  private def registerJsObj(jsObject: JsObject): Unit = {
     val name = jsObject \ Field.NAME
-    log.info(s"registering: $name")
-
-    val tp = getField(Field.TYPE, jsObject, Type.NONE)(_.as[String]).toLowerCase
+    log.debug(s"registering: $name")
 
     try {
-      if (!whitelist.contains(tp)) {
-        false // 不注册该类型json
-      } else {
-        preProcess(jsObject, tp) match {
-          case Some(value) =>
-            val (key, obj) = value
-            postProcess(key, obj)
-            true
-          case None =>
-            cpfCache += jsObject // parent还没加载，先缓存起来后续处理
-            false
-        }
+      preProcess(jsObject).foreach {
+        value =>
+          val (key, obj) = value
+          postProcess(key, obj)
       }
     } catch {
       case e: Exception =>
         e.printStackTrace()
         log.error(s"register fail, err: $e, obj: $jsObject")
-        false
     }
   }
 
@@ -73,33 +67,16 @@ abstract class BaseResourceManager extends ResourceManager {
    *
    * @see [[Type]]
    */
-  private def preProcess(jsObject: JsObject, tp: String): Option[(List[String], JsObject)] = {
-    import Type._
-    import handler.HandlerImplicit._
-
-    // 对各Type做特异性处理
-    val opt = tp match {
-      case MONSTER => jsObject.process[Monster]
-      case _ => jsObject.process[Item]
-    }
-
-    opt.map {
-      v =>
-        // 处理color字段
-        val pend = handleColor(v._2)
-        v._1 -> pend
+  private def preProcess(jsObject: JsObject): Option[(List[String], JsObject)] = {
+    handlerPipe.foldLeft(Option.empty[(List[String], JsObject)]) {
+      (left, right) => {
+        right.handle(jsObject) match {
+          case x: Some[(List[String], JsObject)] => x
+          case None => left
+        }
+      }
     }
   }
-
-  private def handleColor(obj: JsObject): JsObject = {
-    val tf = (__ \ Field.COLOR).json.update(__.read[JsString].map(str => JsArray(parseColor(str.as[String]).map(JsString))))
-    obj.transform(tf) match {
-      case JsSuccess(value, _) => value
-      case JsError(_) => obj
-    }
-  }
-
-  protected def indexKey(tp: String, name: String): String = s"$tp.$name"
 
   //========================模板方法==================================
   /**

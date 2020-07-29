@@ -42,7 +42,7 @@ object JsonUtil {
   def getString(field: String)(implicit jsValue: JsValue): String = {
     getField(field, jsValue, "") {
       case JsString(value) => value
-      case _ => throw new Exception(s"field: $field is not a string")
+      case _ => throw new Exception(s"field: $field is not a string, json: $jsValue")
     }
   }
 

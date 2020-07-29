@@ -2,11 +2,29 @@ package common
 
 trait TypeLiteral {
   val ITEM = "item"
-
   // subtype of item
-  val BOOK = "book"
-  val COMESTIBLE = "comestible"
-  val AMMO = "ammo"
+  val ITEM_TYPES = List(
+    "book",
+    "comestible",
+    "ammo",
+    "generic",
+    "gun",
+    "bionic_item",
+    "tool",
+    "armor",
+    "tool_armor",
+    "gunmod",
+    "battery",
+    "toolmod",
+    "engine",
+    "pet_armor",
+    "wheel",
+    "ammunition_type",
+    //"migration",
+    //"effect_type",
+    "magazine"
+  )
+
 
   val RECIPE = "recipe"
 
@@ -30,4 +48,5 @@ trait Type {
   type Recipe
 }
 
-object Type extends TypeLiteral with Type {}
+object Type extends TypeLiteral with Type {
+}

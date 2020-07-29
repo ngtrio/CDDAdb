@@ -8,8 +8,8 @@ import repository.AllInOneRepository
 class MainController @Inject()(cc: ControllerComponents,
                                repo: AllInOneRepository
                               ) extends AbstractController(cc) {
-  def getInfo(tp: String, name: String): Action[AnyContent] = Action {
-    val res = repo.getOne(tp, name)
+  def getInfo(prefix: String, name: String): Action[AnyContent] = Action {
+    val res = repo.getOne(prefix, name)
     Ok(res).as(JSON)
   }
 

@@ -37,12 +37,14 @@ class MemResourceManager extends BaseResourceManager {
     keys.foreach {
       key =>
         idx += key -> obj
-        log.info(s"registered: $key")
     }
+    if (keys.nonEmpty)
+      log.info(s"registered: $keys")
+    else
+      log.info(s"skip register abstract: $obj")
   }
 
-  override def getByTypeName(tp: String, name: String): JsObject = {
-    val key = indexKey(tp, name)
+  override def index(key: String): JsObject = {
     log.info(s"get: $key")
     idx.get(key) match {
       case Some(value) => value
@@ -50,7 +52,7 @@ class MemResourceManager extends BaseResourceManager {
     }
   }
 
-  override def listByType(tp: String): List[JsObject] = {
+  override def list(tp: String): List[JsObject] = {
     val res = ListBuffer[JsObject]()
     idx.foreach {
       pair =>
