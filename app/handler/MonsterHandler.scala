@@ -2,43 +2,38 @@ package handler
 
 import common.Field._
 import common.Type._
+import play.api.Logger
 import play.api.libs.json.{JsArray, JsObject, Json}
 import utils.JsonUtil._
 
 import scala.collection.mutable
-import scala.collection.mutable.ListBuffer
 
-object MonsterHandler extends Handler
-  with CopyFromSupport with I18nSupport with ColorSymbolSupport {
-  override protected var prefix = s"$MONSTER."
-  override protected var objCache: mutable.Map[String, JsObject] = mutable.Map()
-  override var cpfCache: ListBuffer[JsObject] = ListBuffer()
+object MonsterHandler extends Handler with I18nSupport with ColorSymbolSupport {
+  private val log = Logger(MonsterHandler.getClass)
+  private val prefix = MONSTER
 
-  override def handle(obj: JsObject): Option[(List[String], JsObject)] = {
-    val tp = getString(TYPE)(obj).toLowerCase
-    if (tp == MONSTER) {
-      val ident = getString(ID)(obj)
-      handleCopyFrom(obj, ident).map {
-        value =>
-          implicit var pend: JsObject = tranObj(value, NAME, DESCRIPTION)
-          pend = handleColor
-          pend = fill
-          val diff = difficulty
-          val vol = volume
-          pend = pend ++ Json.obj(
-            DIFFICULTY -> diff,
-            VOLUME -> vol
-          )
+  override def handle(objs: mutable.Map[String, JsObject])(implicit ctxt: HandlerContext): Unit = {
+    log.info(s"handling ${objs.size} objects, wait...")
+    objs.foreach {
+      pair =>
+        val (ident, obj) = pair
+        implicit var pend: JsObject = tranObj(obj, NAME, DESCRIPTION)
+        pend = handleColor
 
-          val idxKeys = ListBuffer[String]()
-          if (!hasField(ABSTRACT)(pend)) {
-            val name = getString(NAME)(pend).toLowerCase
-            idxKeys += s"$prefix$name"
-          }
+        pend = fill
+        val diff = difficulty
+        val vol = volume
+        pend = pend ++ Json.obj(
+          DIFFICULTY -> diff,
+          VOLUME -> vol
+        )
 
-          idxKeys.toList -> pend
-      }
-    } else None
+        val name = getString(NAME)
+        val idxKeys = genKey(prefix, name) :: genKey(prefix, ident) :: Nil
+
+        log.info(s"registered keys: $idxKeys")
+        ctxt.indexed += idxKeys -> pend
+    }
   }
 
   private def difficulty(implicit obj: JsObject): String = {

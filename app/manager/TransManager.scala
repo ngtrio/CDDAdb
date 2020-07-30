@@ -1,12 +1,15 @@
 package manager
 
 import parser.POParser
+import play.api.Logger
 
 object TransManager extends Manager {
+  private val log = Logger(TransManager.getClass)
   private val trans = Map[String, Map[String, String]]()
   private val poParser = POParser()
-  private val res = poParser.fromFile("data/zh.po").parse
 
+  log.info("loading translation file for the first time, wait...")
+  private val res = poParser.fromFile("data/zh.po").parse
   res.foreach {
     case POParser.SingleTrans(msgctxt, msgid, msgstr) =>
       trans.get(msgid) match {

@@ -50,6 +50,10 @@ object Field {
   val VISION_NIGHT = "vision_night"
   val DIFFICULTY = "difficulty"
 
+  // recipe
   val RESULT = "result"
   val ID_SUFFIX = "id_suffix"
+
+  // material
+  val IDENT = "ident"
 }

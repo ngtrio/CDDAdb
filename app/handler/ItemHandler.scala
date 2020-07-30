@@ -1,35 +1,30 @@
 package handler
 
 import common.Field._
-import common.Type._
+import play.api.Logger
 import play.api.libs.json.JsObject
 import utils.JsonUtil._
 
 import scala.collection.mutable
-import scala.collection.mutable.ListBuffer
 
-object ItemHandler extends Handler
-  with CopyFromSupport with I18nSupport with ColorSymbolSupport {
-  override protected var prefix = s"$ITEM."
-  override protected var objCache: mutable.Map[String, JsObject] = mutable.Map()
-  override var cpfCache: ListBuffer[JsObject] = ListBuffer()
+object ItemHandler extends Handler with I18nSupport with ColorSymbolSupport {
+  private val log = Logger(ItemHandler.getClass)
 
-  override def handle(obj: JsObject): Option[(List[String], JsObject)] = {
-    val tp = getString(TYPE)(obj).toLowerCase
-    if (ITEM_TYPES.contains(tp)) {
-      val ident = getString(ID)(obj)
-      handleCopyFrom(obj, ident).map {
-        value =>
-          implicit var pend: JsObject = tranObj(value, NAME, DESCRIPTION)
-          pend = handleColor
+  override def handle(objs: mutable.Map[String, JsObject])(implicit ctxt: HandlerContext): Unit = {
+    log.info(s"handling ${objs.size} objects, wait...")
 
-          val idxKeys = ListBuffer[String]()
-          if (!hasField(ABSTRACT)) {
-            val name = getString(NAME)
-            idxKeys += s"$prefix$tp.$name"
-          }
-          idxKeys.toList -> pend
-      }
-    } else None
+    objs.foreach {
+      pair =>
+        val (ident, obj) = pair
+        implicit var pend: JsObject = tranObj(obj, NAME, DESCRIPTION)
+        pend = handleColor
+
+        val name = getString(NAME)
+        val tp = getString(TYPE)
+        val idxKeys = genKey(tp, name) :: genKey(tp, ident) :: Nil
+
+        log.info(s"registered keys: $idxKeys")
+        ctxt.indexed += idxKeys -> pend
+    }
   }
 }

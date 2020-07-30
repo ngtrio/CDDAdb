@@ -37,7 +37,7 @@ trait I18nSupport {
       case res: JsArray =>
         val msgid = res.value(0).as[String]
         tran(msgid, "")
-      case res: _ =>
+      case res: JsValue =>
         log.warn(s"name format not supported, format: $res")
         ""
     }

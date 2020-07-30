@@ -2,14 +2,14 @@ package controller
 
 import javax.inject.{Inject, Singleton}
 import play.api.mvc._
-import repository.AllInOneRepository
+import repository.MemRepository
 
 @Singleton
 class MainController @Inject()(cc: ControllerComponents,
-                               repo: AllInOneRepository
+                               repo: MemRepository
                               ) extends AbstractController(cc) {
   def getInfo(prefix: String, name: String): Action[AnyContent] = Action {
-    val res = repo.getOne(prefix, name)
+    val res = repo.getOne(s"$prefix.$name")
     Ok(res).as(JSON)
   }
 

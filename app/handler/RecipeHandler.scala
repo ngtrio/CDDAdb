@@ -1,20 +1,21 @@
 package handler
 
-import common.Field._
 import common.Type._
+import play.api.Logger
 import play.api.libs.json.JsObject
-import utils.JsonUtil.getString
 
 import scala.collection.mutable
-import scala.collection.mutable.ListBuffer
 
-object RecipeHandler extends Handler with CopyFromSupport {
-  override protected var prefix: String = s"$RECIPE."
-  override protected var objCache: mutable.Map[String, JsObject] = mutable.Map()
-  override var cpfCache: ListBuffer[JsObject] = ListBuffer()
+object RecipeHandler extends Handler {
+  private val log = Logger(RecipeHandler.getClass)
+  private var prefix: String = RECIPE
 
-  override def handle(obj: JsObject): Option[(List[String], JsObject)] = {
-    val ident = getString(RESULT)(obj) + getString(ID_SUFFIX)(obj)
+  override def handle(objs: mutable.Map[String, JsObject])(implicit ctxt: HandlerContext): Unit = {
+    log.info(s"handling ${objs.size} objects, wait...")
+    objs.foreach {
+      pair =>
+        val (ident, obj) = pair
+    }
     ???
   }
 }

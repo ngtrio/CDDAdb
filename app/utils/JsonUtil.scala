@@ -2,6 +2,7 @@ package utils
 
 import java.io.{File, FileInputStream, FileNotFoundException}
 
+import common.{Field, Type}
 import play.api.Logger
 import play.api.libs.json._
 
@@ -73,5 +74,23 @@ object JsonUtil {
       case JsSuccess(value, _) => value
       case JsError(_) => jsValue
     }
+  }
+
+  def getIdent(tp: String)(implicit jsObject: JsObject): String = {
+    val abstr = getString(Field.ABSTRACT)
+    if (abstr == "") {
+      tp match {
+        case Type.RECIPE =>
+          if (hasField(Field.ID_SUFFIX)) {
+            s"${getString(Field.ID)}_${getString(Field.ID_SUFFIX)}"
+          } else {
+            s"${getString(Field.ID)}"
+          }
+        case Type.MATERIAL =>
+          s"${getString(Field.IDENT)}"
+        case _ =>
+          s"${getString(Field.ID)}"
+      }
+    } else s"$abstr"
   }
 }
