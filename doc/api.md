@@ -1,7 +1,20 @@
-## Monster
+# list all
+列出该类型下的所有项
+- [x] `GET /{type}
+```json
+[
+  {
+      "id":"mon_hallu_mom", // json的唯一标识
+      "name":"你妈",		  // 名字
+      "symbol":"@",         // 符号
+      "color":["white",""]  // 1: 符号的字体颜色 2: 符号的背景颜色
+  }
+]
+```
 
-GET /monster/{name}
-
+# Monster
+获取id对应的完整json
+- [x] `GET /monster/{id}`
 ```json
 {
   "armor_cut": 4,         // 斩击防护
@@ -62,6 +75,30 @@ GET /monster/{name}
 }
 ```
 
-## Ammo
+# Item
 
-GET /ammo/{name}
+- [ ] `GET /item/{type}/{name}`
+
+Item下的所有类型均会添加两个附加字段：
+
+1.  craft_to：array，包含了所有能够通过本物品作为原料制作得到的物品prefix:ident
+2.  craft_from：number，该物品制作配方的数量
+
+```json
+{
+    "craft_to": ["item1", "item2"],
+    "craft_from": 1
+}
+```
+
+## Book
+
+除开`Item`中添加的两个附加字段还添加了一个附加字段：
+
+1.  recipes：array，包含了本书包含的所有recipe
+
+```json
+{
+    "recipes": ["recipe1", "recipe2", "recipe3"]
+}
+```
