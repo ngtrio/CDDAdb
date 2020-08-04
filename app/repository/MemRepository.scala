@@ -4,7 +4,7 @@ import common.Field
 import javax.inject.{Inject, Named, Singleton}
 import manager.ResourceManager
 import play.api.Logger
-import play.api.libs.json.{JsArray, JsObject, Json}
+import play.api.libs.json.{JsArray, JsObject, JsValue, Json}
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
@@ -13,8 +13,8 @@ import scala.collection.mutable.ListBuffer
 class MemRepository @Inject()(@Named("memrm") manager: ResourceManager) extends Repository {
   private val log = Logger(this.getClass)
 
-  // key -> JsObject
-  private[this] val idx = mutable.Map[String, JsObject]()
+  // key -> JsValue
+  private[this] val idx = mutable.Map[String, JsValue]()
 
   // start up
   updateIndexes()
@@ -22,15 +22,12 @@ class MemRepository @Inject()(@Named("memrm") manager: ResourceManager) extends 
   override protected def updateIndexes(): Unit = {
     manager.update().foreach {
       pair =>
-        val (keys, obj) = pair
-        keys.foreach {
-          key =>
-            idx += key -> obj
-        }
+        val (key, value) = pair
+        idx += key -> value
     }
   }
 
-  override def getOne(key: String): JsObject = {
+  override def getOne(key: String): JsValue = {
     log.info(s"get: $key")
     idx.get(key) match {
       case Some(value) => value
@@ -46,12 +43,14 @@ class MemRepository @Inject()(@Named("memrm") manager: ResourceManager) extends 
       pair =>
         val k = pair._1
         val v = pair._2
-        if (k.contains(tp)) {
+        if (k.contains(s"$tp")) {
+          val id = getString(Field.ID)(v)
           val name = getString(Field.NAME)(v)
           val symbol = getString(Field.SYMBOL)(v)
           val color = getField(Field.COLOR, v, JsArray())(_.as[JsArray])
 
           res += Json.obj(
+            Field.ID -> id,
             Field.NAME -> name,
             Field.SYMBOL -> symbol,
             Field.COLOR -> color

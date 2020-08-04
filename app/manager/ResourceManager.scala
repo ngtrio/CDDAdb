@@ -1,9 +1,9 @@
 package manager
 
 import com.google.inject.ImplementedBy
-import play.api.libs.json.JsObject
+import play.api.libs.json.JsValue
 
 @ImplementedBy(classOf[BaseResourceManager])
-trait ResourceManager extends Manager {
-  def update(): List[(List[String], JsObject)]
+trait ResourceManager {
+  def update(): List[(String, JsValue)]
 }

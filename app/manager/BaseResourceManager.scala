@@ -19,7 +19,7 @@ class BaseResourceManager extends ResourceManager {
 
   protected var poPath: String = _
   protected var dataPath: List[String] = _
-  implicit protected var handlerCtxt: HandlerContext = HandlerContext()
+  implicit protected var handlerCtxt: HandlerContext = new HandlerContext()
 
   @Inject
   def this(config: Configuration) = {
@@ -35,7 +35,7 @@ class BaseResourceManager extends ResourceManager {
     this.dataPath = dataPath
   }
 
-  override def update(): List[(List[String], JsObject)] = {
+  override def update(): List[(String, JsValue)] = {
     try {
       dataPath.foreach {
         path =>
@@ -54,17 +54,30 @@ class BaseResourceManager extends ResourceManager {
     handlerCtxt.clear()
   }
 
-  private val blacklist = List(MIGRATION, EFFECT_TYPE)
+  private val blacklist = List(MIGRATION, EFFECT_TYPE, TALK_TOPIC, OVERMAP_TERRAIN)
 
   private def loadJson(jsObject: JsObject): Unit = {
     val tp = getString(TYPE)(jsObject).toLowerCase
+    var pend = jsObject
     if (!blacklist.contains(tp)) {
-      val key = if (ITEM_TYPES.contains(tp)) ITEM else tp
+      // 给obj添加附加字段
+      val key = if (ITEM_TYPES.contains(tp)) {
+        pend = pend ++ Json.obj(
+          CRAFT_TO -> JsArray(),
+          CRAFT_FROM -> JsBoolean(false),
+        )
+        if (tp == BOOK) {
+          pend = pend ++ Json.obj(
+            RECIPES -> JsArray()
+          )
+        }
+        ITEM
+      } else tp
 
       // 获取该json的唯一标识，不同type的唯一标识生成算法可能不一样
-      val ident = getIdent(tp)(jsObject)
-      handlerCtxt.objCache(key) += ident -> jsObject
-      log.debug(s"json loaded: ${ident -> jsObject}")
+      val ident = getIdent(tp)(pend)
+      handlerCtxt.objCache(key) += ident -> pend
+      log.debug(s"json loaded: ${ident -> pend}")
     }
   }
 
@@ -183,18 +196,27 @@ class BaseResourceManager extends ResourceManager {
     }
   }
 
-  /**
-   * 本方法将生成此后展示层接受的最终数据，所以任何字段处理都必须在此处理完
-   */
   private def postProcess(): Unit = {
+    // 任何字段处理都必须在本循环处理完
     handlerCtxt.objCaches.foreach {
       cacheMap =>
         val (tp, objCache) = cacheMap
-        log.debug(s"objects of type '$tp' is matching handler")
         tp match {
           case ITEM => ItemHandler.handle(objCache)
           case RECIPE => RecipeHandler.handle(objCache)
           case MONSTER => MonsterHandler.handle(objCache)
+          case _ =>
+        }
+    }
+
+    // 翻译、构建索引等
+    handlerCtxt.objCaches.foreach {
+      cacheMap =>
+        val (tp, objCache) = cacheMap
+        tp match {
+          case ITEM => ItemHandler.finalize(objCache)
+          case RECIPE => RecipeHandler.finalize(objCache)
+          case MONSTER => MonsterHandler.finalize(objCache)
           case _ =>
         }
     }

@@ -53,7 +53,20 @@ object Field {
   // recipe
   val RESULT = "result"
   val ID_SUFFIX = "id_suffix"
+  val SKILL_USED = "skill_used"
+  val BOOK_LEARN = "book_learn"
+  val USING = "using"
+  val QUALITIES = "qualities"
+  val TOOLS = "tools"
+  val COMPONENTS = "components"
+  val LEVEL = "level"
+
 
   // material
   val IDENT = "ident"
+
+  // custom
+  val CRAFT_TO = "craft_to"
+  val CRAFT_FROM = "craft_from"
+  val RECIPES = "recipes"
 }

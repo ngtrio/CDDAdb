@@ -4,20 +4,21 @@ import common.Field._
 import common.Type._
 import play.api.Logger
 import play.api.libs.json.{JsArray, JsObject, Json}
+import utils.I18nUtil.{tranObj, tranString}
 import utils.JsonUtil._
 
 import scala.collection.mutable
 
-object MonsterHandler extends Handler with I18nSupport with ColorSymbolSupport {
+object MonsterHandler extends Handler with ColorSymbolSupport {
   private val log = Logger(MonsterHandler.getClass)
   private val prefix = MONSTER
 
   override def handle(objs: mutable.Map[String, JsObject])(implicit ctxt: HandlerContext): Unit = {
-    log.info(s"handling ${objs.size} objects, wait...")
+    log.debug(s"handling ${objs.size} objects, wait...")
     objs.foreach {
       pair =>
         val (ident, obj) = pair
-        implicit var pend: JsObject = tranObj(obj, NAME, DESCRIPTION)
+        implicit var pend: JsObject = obj
         pend = handleColor
 
         pend = fill
@@ -28,11 +29,7 @@ object MonsterHandler extends Handler with I18nSupport with ColorSymbolSupport {
           VOLUME -> vol
         )
 
-        val name = getString(NAME)
-        val idxKeys = genKey(prefix, name) :: genKey(prefix, ident) :: Nil
-
-        log.info(s"registered keys: $idxKeys")
-        ctxt.indexed += idxKeys -> pend
+        objs(ident) = pend
     }
   }
 
@@ -45,8 +42,8 @@ object MonsterHandler extends Handler with I18nSupport with ColorSymbolSupport {
     val aBash = getNumber(ARMOR_BASH)
     val aCut = getNumber(ARMOR_CUT)
     val diff = getNumber(DIFF)
-    val sAttack = getArray(SPECIAL_ATTACKS)
-    val eFields = getArray(EMIT_FIELD)
+    val sAttack = getArray(SPECIAL_ATTACKS).value
+    val eFields = getArray(EMIT_FIELD).value
     val hp = getNumber(HP)
     val speed = getNumber(SPEED)
     val aCost = getNumber(ATTACK_COST)
@@ -64,16 +61,16 @@ object MonsterHandler extends Handler with I18nSupport with ColorSymbolSupport {
 
   private def difLevel(implicit difficulty: BigDecimal): String = {
     val str = difficulty match {
-      case x if x < 3 => tran("<color_light_gray>Minimal threat.</color>")
-      case x if x < 10 => tran("<color_light_gray>Mildly dangerous.</color>")
-      case x if x < 20 => tran("<color_light_red>Dangerous.</color>")
-      case x if x < 30 => tran("<color_red>Very dangerous.</color>")
-      case x if x < 50 => tran("<color_red>Extremely dangerous.</color>")
-      case _ => tran("<color_red>Fatally dangerous!</color>")
+      case x if x < 3 => tranString("<color_light_gray>Minimal threat.</color>")
+      case x if x < 10 => tranString("<color_light_gray>Mildly dangerous.</color>")
+      case x if x < 20 => tranString("<color_light_red>Dangerous.</color>")
+      case x if x < 30 => tranString("<color_red>Very dangerous.</color>")
+      case x if x < 50 => tranString("<color_red>Extremely dangerous.</color>")
+      case _ => tranString("<color_red>Fatally dangerous!</color>")
     }
-    str
+    str.value
     //不用替换标签，前端加样式还能显示颜色
-    //str.replaceAll("<.*?>", "")
+    //str.value.replaceAll("<.*?>", "")
   }
 
   private def volume(implicit obj: JsObject): String = {
@@ -84,11 +81,11 @@ object MonsterHandler extends Handler with I18nSupport with ColorSymbolSupport {
       val value = if (arr(1) == "ml") arr(0).toInt / 1000.0 else arr(0).toDouble
 
       val desc = value match {
-        case x if x <= 7.5 => tran("tiny", "size adj")
-        case x if x <= 46.25 => tran("small", "size adj")
-        case x if x <= 77.5 => tran("medium", "size adj")
-        case x if x <= 483.75 => tran("large", "size adj")
-        case _ => tran("huge", "size adj")
+        case x if x <= 7.5 => tranString("tiny", "size adj")
+        case x if x <= 46.25 => tranString("small", "size adj")
+        case x if x <= 77.5 => tranString("medium", "size adj")
+        case x if x <= 483.75 => tranString("large", "size adj")
+        case _ => tranString("huge", "size adj")
       }
       s"${value}L($desc)"
     } else {
@@ -120,5 +117,19 @@ object MonsterHandler extends Handler with I18nSupport with ColorSymbolSupport {
       VISION_NIGHT -> 1
     )
     toFill ++ obj
+  }
+
+  override def finalize(objs: mutable.Map[String, JsObject])
+                       (implicit ctxt: HandlerContext): Unit = {
+    objs.foreach {
+      pair =>
+        val (ident, obj) = pair
+        val pend = tranObj(obj, NAME, DESCRIPTION)
+        //        val name = getString(Field.NAME)(pend)
+        ctxt.addIndex(
+          s"$prefix:$ident" -> pend,
+          //          s"$prefix:$name" -> JsString(s"$prefix:$ident")
+        )
+    }
   }
 }

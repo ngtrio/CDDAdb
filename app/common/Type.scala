@@ -22,6 +22,7 @@ trait TypeLiteral {
   val MIGRATION = "migration" // ignore
   val EFFECT_TYPE = "effect_type" // ignore
   val MAGAZINE = "magazine"
+  val TOOL_QUALITY = "tool_quality"
 
   val ITEM_TYPES = List(
     BOOK, COMESTIBLE, AMMO, GENERIC, GUN, BIONIC_ITEM, TOOL, ARMOR, TOOL_ARMOR,
@@ -30,7 +31,7 @@ trait TypeLiteral {
 
   val RECIPE = "recipe"
   val MATERIAL = "material"
-
+  val REQUIREMENT = "requirement"
   val MONSTER = "monster"
 
   val TALK_TOPIC = "talk_topic" // id字段为数组

@@ -1,9 +1,9 @@
 package repository
 
-import play.api.libs.json.{JsArray, JsObject}
+import play.api.libs.json.{JsArray, JsValue}
 
 trait Repository {
-  def getOne(key: String): JsObject
+  def getOne(key: String): JsValue
 
   def listNameInfo(tp: String): JsArray
 

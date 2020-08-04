@@ -54,9 +54,9 @@ object JsonUtil {
     }
   }
 
-  def getArray(field: String)(implicit jsValue: JsValue): Array[JsValue] = {
-    getField(field, jsValue, Array[JsValue]()) {
-      case JsArray(value) => value.toArray
+  def getArray(field: String)(implicit jsValue: JsValue): JsArray = {
+    getField(field, jsValue, JsArray()) {
+      case x: JsArray => x
       case _ => throw new Exception(s"field: $field is not an array")
     }
   }
@@ -68,23 +68,31 @@ object JsonUtil {
     }
   }
 
-  def updateField[T <: JsValue](path: JsPath, jsValue: JsValue, value: T): JsValue = {
-    val tf = path.json.update(__.json.put(value))
-    jsValue.transform(tf) match {
+  def transform[T <: JsValue](reads: Reads[T], jsValue: T): T = {
+    jsValue.transform(reads) match {
       case JsSuccess(value, _) => value
       case JsError(_) => jsValue
     }
   }
+
+  def addToArray(field: String, values: JsValue*)(implicit obj: JsObject): JsObject = {
+    val arr = obj(field).as[JsArray]
+    obj ++ Json.obj(
+      field -> JsArray(arr.value ++ values)
+    )
+  }
+
 
   def getIdent(tp: String)(implicit jsObject: JsObject): String = {
     val abstr = getString(Field.ABSTRACT)
     if (abstr == "") {
       tp match {
         case Type.RECIPE =>
+          // see https://github.com/CleverRaven/Cataclysm-DDA/blob/30ffa2af1a1da178f3f328b54a366d60095967e4/src/recipe.cpp#L264
           if (hasField(Field.ID_SUFFIX)) {
-            s"${getString(Field.ID)}_${getString(Field.ID_SUFFIX)}"
+            s"${getString(Field.RESULT)}_${getString(Field.ID_SUFFIX)}"
           } else {
-            s"${getString(Field.ID)}"
+            s"${getString(Field.RESULT)}"
           }
         case Type.MATERIAL =>
           s"${getString(Field.IDENT)}"
