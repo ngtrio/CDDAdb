@@ -37,7 +37,13 @@ object I18nUtil {
       field =>
         jsObject \ field match {
           case JsDefined(value) =>
-            res ++= Json.obj(field -> tranField(field, value))
+            try {
+              res ++= Json.obj(field -> tranField(field, value))
+            } catch {
+              case ex: Exception =>
+                log.error(s"$ex, json: $jsObject")
+                throw ex
+            }
           case JsUndefined() => log.warn(s"field: $field not found in $jsObject")
         }
     }
@@ -61,7 +67,7 @@ object I18nUtil {
     }
   }
 
-  private def tranName(jsValue: JsValue): JsString = {
+  def tranName(jsValue: JsValue): JsString = {
     jsValue match {
       case res: JsString =>
         // 直接翻译string
@@ -94,7 +100,7 @@ object I18nUtil {
     arr.foreach {
       obj =>
         val ident = getString(Field.ID)(obj)
-        val level = getString(Field.LEVEL)(obj)
+        val level = getNumber(Field.LEVEL)(obj)
         val name = tranIdent(Type.TOOL_QUALITY, ident)
         res :+= Json.obj(
           Field.ID -> name,
@@ -137,7 +143,9 @@ object I18nUtil {
           case Field.NAME => tranName(jsValue)
           case _ => tranString(jsValue.as[String])
         }
-      case None => throw new Exception(s"obj of type: $tp, ident: $ident not found")
+      case None =>
+        log.warn(s"obj of type: $tp, ident: $ident not found")
+        JsString(ident)
     }
   }
 

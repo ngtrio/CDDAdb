@@ -33,7 +33,7 @@ object ItemHandler extends Handler with ColorSymbolSupport {
         val (ident, obj) = pair
         val pend = tranObj(obj, NAME, DESCRIPTION)
         //        val name = getString(NAME)(pend)
-        val tp = getString(TYPE)(pend)
+        val tp = getString(TYPE)(pend).toLowerCase
         ctxt.addIndex(
           s"$prefix:$tp:$ident" -> pend,
           //          s"$prefix:$tp:$name" -> JsString(s"$prefix:$tp:$ident")

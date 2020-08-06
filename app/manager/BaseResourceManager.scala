@@ -64,7 +64,7 @@ class BaseResourceManager extends ResourceManager {
       val key = if (ITEM_TYPES.contains(tp)) {
         pend = pend ++ Json.obj(
           CRAFT_TO -> JsArray(),
-          CRAFT_FROM -> JsBoolean(false),
+          CAN_CRAFT -> JsBoolean(false),
         )
         if (tp == BOOK) {
           pend = pend ++ Json.obj(

@@ -67,6 +67,6 @@ object Field {
 
   // custom
   val CRAFT_TO = "craft_to"
-  val CRAFT_FROM = "craft_from"
+  val CAN_CRAFT = "can_craft"
   val RECIPES = "recipes"
 }
