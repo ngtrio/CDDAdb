@@ -87,7 +87,7 @@ object MonsterHandler extends Handler with ColorSymbolSupport {
         case x if x <= 483.75 => tranString("large", "size adj")
         case _ => tranString("huge", "size adj")
       }
-      s"${value}L($desc)"
+      s"${value}L(${desc.value})"
     } else {
       vol
     }
