@@ -8,8 +8,8 @@ import repository.MemRepository
 class MainController @Inject()(cc: ControllerComponents,
                                repo: MemRepository
                               ) extends AbstractController(cc) {
-  def getInfo(prefix: String, name: String): Action[AnyContent] = Action {
-    val res = repo.getOne(s"$prefix:$name")
+  def getInfo(prefix: String, id: String): Action[AnyContent] = Action {
+    val res = repo.getOne(s"$prefix:$id")
     Ok(res).as(JSON)
   }
 

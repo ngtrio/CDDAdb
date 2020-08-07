@@ -134,8 +134,8 @@ object I18nUtil {
   }
 
   // 将field to的翻译映射到id上
-  private def tranIdent(tp: String, ident: String, to: String = Field.NAME)
-                       (implicit hCtxt: HandlerContext): JsString = {
+  def tranIdent(tp: String, ident: String, to: String = Field.NAME)
+               (implicit hCtxt: HandlerContext): JsString = {
     hCtxt.objCache(tp).get(ident) match {
       case Some(value) =>
         val jsValue = (value \ to).get

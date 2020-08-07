@@ -83,7 +83,7 @@ object JsonUtil {
   }
 
 
-  def getIdent(tp: String)(implicit jsObject: JsObject): String = {
+  def getIdent(tp: String)(implicit jsValue: JsValue): String = {
     val abstr = getString(Field.ABSTRACT)
     if (abstr == "") {
       tp match {

@@ -4,14 +4,14 @@ import common.Field._
 import common.Type._
 import play.api.Logger
 import play.api.libs.json._
-import utils.I18nUtil.{tranName, tranObj}
+import utils.I18nUtil.{tranIdent, tranName, tranObj}
 import utils.JsonUtil._
 
 import scala.collection.mutable
 
 object RecipeHandler extends Handler {
   private val log = Logger(RecipeHandler.getClass)
-  private var prefix: String = RECIPE
+  private val prefix: String = RECIPE
 
   override def handle(objs: mutable.Map[String, JsObject])(implicit ctxt: HandlerContext): Unit = {
     log.debug(s"handling ${objs.size} objects, wait...")
@@ -132,7 +132,9 @@ object RecipeHandler extends Handler {
     objs.foreach {
       pair =>
         val (ident, obj) = pair
-        val pend = tranObj(obj, RESULT, QUALITIES, TOOLS, COMPONENTS)
+        val pend = tranObj(obj, QUALITIES, TOOLS, COMPONENTS) ++ Json.obj(
+          NAME -> tranIdent(ITEM, ident)
+        )
         //        val name = getString(RESULT)(pend)
         ctxt.addIndex(
           s"$prefix:$ident" -> pend,

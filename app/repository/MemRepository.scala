@@ -37,6 +37,7 @@ class MemRepository @Inject()(@Named("memrm") manager: ResourceManager) extends 
 
   override def listNameInfo(tp: String): JsArray = {
     import utils.JsonUtil._
+    log.info(s"list: $tp")
 
     val res = ListBuffer[JsObject]()
     idx.foreach {
@@ -44,7 +45,7 @@ class MemRepository @Inject()(@Named("memrm") manager: ResourceManager) extends 
         val k = pair._1
         val v = pair._2
         if (k.contains(s"$tp")) {
-          val id = getString(Field.ID)(v)
+          val id = getIdent(tp)(v)
           val name = getString(Field.NAME)(v)
           val symbol = getString(Field.SYMBOL)(v)
           val color = getField(Field.COLOR, v, JsArray())(_.as[JsArray])

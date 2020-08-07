@@ -54,3 +54,51 @@ static creature_size volume_to_size( const units::volume &vol )
     return creature_size::huge;
 }
 ```
+# Armor
+## 防护
+```
+int item::bash_resist( bool to_self ) const
+{
+
+    // bash cut bullet
+    // 全新时，eff_damage为0
+    const int eff_thickness = std::max( 1, get_thickness() - eff_damage );
+
+    const std::vector<const material_type *> mat_types = made_of_types();
+    if( !mat_types.empty() ) {
+        for( const material_type *mat : mat_types ) {
+            resist += mat->bash_resist();
+        }
+        // Average based on number of materials.
+        resist /= mat_types.size();
+    }
+
+    // 不考虑强化，mod为0
+    return std::lround( ( resist * eff_thickness ) + mod );
+
+    // fire, acid
+    if( !mat_types.empty() ) {
+            // Not sure why cut and bash get an armor thickness bonus but acid doesn't,
+            // but such is the way of the code.
+    
+            for( const material_type *mat : mat_types ) {
+                resist += mat->acid_resist();
+            }
+            // Average based on number of materials.
+            resist /= mat_types.size();
+        }
+    
+        const int env = get_env_resist( base_env_resist );
+        if( env < 10 ) {
+            // Low env protection means it doesn't prevent acid seeping in.
+            resist *= env / 10.0f;
+        }
+        return std::lround( resist + mod );
+    }
+}
+```
+## Melee
+### attack time 
+```
+int ret = 65 + ( volume() / 62.5_ml + weight() / 60_gram ) / 1;
+```

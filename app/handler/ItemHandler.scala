@@ -1,7 +1,6 @@
 package handler
 
 import common.Field._
-import common.Type
 import play.api.Logger
 import play.api.libs.json.JsObject
 import utils.I18nUtil.tranObj
@@ -11,7 +10,6 @@ import scala.collection.mutable
 
 object ItemHandler extends Handler with ColorSymbolSupport {
   private val log = Logger(ItemHandler.getClass)
-  private val prefix = Type.ITEM
 
   override def handle(objs: mutable.Map[String, JsObject])(implicit ctxt: HandlerContext): Unit = {
     log.debug(s"handling ${objs.size} objects, wait...")
@@ -35,8 +33,8 @@ object ItemHandler extends Handler with ColorSymbolSupport {
         //        val name = getString(NAME)(pend)
         val tp = getString(TYPE)(pend).toLowerCase
         ctxt.addIndex(
-          s"$prefix:$tp:$ident" -> pend,
-          //          s"$prefix:$tp:$name" -> JsString(s"$prefix:$tp:$ident")
+          s"$tp:$ident" -> pend,
+          //          s"$tp:$name" -> JsString(s"$tp:$ident")
         )
     }
   }
