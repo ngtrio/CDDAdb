@@ -1,4 +1,4 @@
-import {Card, List, Spin, Typography} from "antd";
+import {Card, List, Typography} from "antd";
 import React from "react";
 import {request} from "../../utils/request";
 import {Link, RouteComponentProps, withRouter} from "react-router-dom";
@@ -11,7 +11,6 @@ interface Info {
 }
 
 interface State {
-    loading: boolean,
     content: Info[]
 }
 
@@ -19,14 +18,15 @@ class Showcase extends React.Component<Props, State> {
     constructor(props: Props) {
         super(props);
         this.state = {
-            loading: true,
             content: []
         }
         this.fetchData()
     }
 
     componentDidUpdate(prevProps: Readonly<Props>) {
-        if (prevProps !== this.props) {
+        let preType = prevProps.match.params.type
+        let type = this.props.match.params.type
+        if (preType === undefined || preType !== type) {
             this.fetchData()
         }
     }
@@ -34,10 +34,9 @@ class Showcase extends React.Component<Props, State> {
     fetchData() {
         const {type} = this.props.match.params
         if (type !== undefined) {
-            let url = "http://120.24.60.156:9000/" + type
+            let url = `http://localhost:9000/${type}`
             request(url, "GET")
                 .then(data => this.setState({
-                    loading: false,
                     content: data
                 }))
                 .catch(err => console.log(err))
@@ -45,7 +44,7 @@ class Showcase extends React.Component<Props, State> {
     }
 
     render() {
-        const {content, loading} = this.state
+        const {content} = this.state
         const {type} = this.props.match.params
 
         let renderItem = (item: Info) => {
@@ -61,19 +60,12 @@ class Showcase extends React.Component<Props, State> {
                 </Link>
             )
         }
-        if (!loading) {
-            return (
-                <Card>
-                    <List
-                        dataSource={content}
-                        renderItem={item => renderItem(item)}
-                    />
-                </Card>
-            )
-        }
         return (
             <Card>
-                <Spin/>
+                <List
+                    dataSource={content}
+                    renderItem={item => renderItem(item)}
+                />
             </Card>
         )
     }

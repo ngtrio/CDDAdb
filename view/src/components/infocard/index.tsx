@@ -42,13 +42,13 @@ class InfoCard extends React.Component<Props, State> {
     }
 
     fetchData() {
-        const {type, name} = this.props.match.params
-        if (name !== undefined) {
-            let url = "http://120.24.60.156:9000/" + type + "/" + name
+        const {type, id} = this.props.match.params
+        if (id !== undefined) {
+            let url = "http://localhost:9000/" + type + "/" + id
             request(url, 'GET')
                 .then(data => {
                     this.setState({
-                        notFound: data.name === undefined,
+                        notFound: data === {},
                         needed: true,
                         loading: false,
                         content: data
@@ -65,15 +65,20 @@ class InfoCard extends React.Component<Props, State> {
             return <Card><Spin/></Card>
         } else {
             if (notFound) return <Card><Empty/></Card>
+            let symbol
+            if (content.symbol !== undefined) {
+                symbol = (<span style={{
+                        color: content.color[0],
+                        backgroundColor: content.color[1]
+                    }}>
+                    {content.symbol}
+                    </span>
+                )
+            }
             let title = (
                 <div>
-                    <span
-                        style={{
-                            color: content.color[0],
-                            backgroundColor: content.color[1]
-                        }}>
-                    {content.symbol}
-                    </span> {content.name}
+                    {symbol}
+                    {content.name}
                 </div>
             )
             return (
