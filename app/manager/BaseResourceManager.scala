@@ -76,20 +76,9 @@ class BaseResourceManager extends ResourceManager {
     val tp = getString(TYPE)(jsObject).toLowerCase
     var pend = jsObject
     if (shouldLoad(jsObject)) {
-      // 给obj添加附加字段
-      val key = if (ITEM_TYPES.contains(tp)) {
-        pend = pend ++ Json.obj(
-          CRAFT_TO -> JsArray(),
-          CAN_CRAFT -> JsBoolean(false),
-        )
-        if (tp == BOOK) {
-          pend = pend ++ Json.obj(
-            RECIPES -> JsArray()
-          )
-        }
-        ITEM
-      } else tp
+      pend = addCustomField(tp, pend)
 
+      val key = if (ITEM_TYPES.contains(tp)) ITEM else tp
       def cacheObj(ident: String, pend: JsObject): Unit = {
         handlerCtxt.objCache(key) += ident -> pend
         log.debug(s"json loaded: ${ident -> pend}")
@@ -97,10 +86,33 @@ class BaseResourceManager extends ResourceManager {
 
       // 获取该json的唯一标识，不同type的唯一标识生成算法可能不一样
       getIdent(tp)(pend) match {
-        case Left(ident) => cacheObj(ident, pend)
+        case Left(ident) =>
+          cacheObj(ident, pend)
+          // cache tool substitution
+          if (tp == TOOL) {
+            val sub = getString(SUB)(pend)
+            handlerCtxt.addToolSub(sub, ident)
+          }
         case Right(identList) => identList.foreach(cacheObj(_, pend))
       }
     }
+  }
+
+  /** add custom field, see [[common.Type]] */
+  private def addCustomField(tp: String, jsObject: JsObject): JsObject = {
+    var pend = jsObject
+    if (ITEM_TYPES.contains(tp)) {
+      pend ++= Json.obj(
+        CRAFT_TO -> JsArray(),
+        CAN_CRAFT -> JsBoolean(false),
+      )
+      if (tp == BOOK) {
+        pend ++= jsObject ++ Json.obj(
+          RECIPES -> JsArray()
+        )
+      }
+    }
+    pend
   }
 
   // 将所有加载到的json进行copy-from处理

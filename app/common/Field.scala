@@ -64,6 +64,13 @@ object Field {
   val REPLACE = "replace"
   val OBSOLETE = "obsolete"
 
+  // new book_learn format
+  val SKILL_LEVEL = "skill_level"
+  val RECIPE_NAME = "recipe_name"
+
+  // tool
+  val SUB = "sub"
+
   // material
   val IDENT = "ident"
 
