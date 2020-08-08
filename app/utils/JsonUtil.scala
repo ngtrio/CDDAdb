@@ -2,6 +2,7 @@ package utils
 
 import java.io.{File, FileInputStream, FileNotFoundException}
 
+import common.Field.{RECIPE_NAME, SKILL_LEVEL}
 import common.{Field, Type}
 import play.api.Logger
 import play.api.libs.json._
@@ -57,7 +58,7 @@ object JsonUtil {
   def getArray(field: String)(implicit jsValue: JsValue): JsArray = {
     getField(field, jsValue, JsArray()) {
       case x: JsArray => x
-      case _ => throw new Exception(s"field: $field is not an array")
+      case _ => throw new Exception(s"field: $field is not an array, json: $jsValue")
     }
   }
 
@@ -80,6 +81,16 @@ object JsonUtil {
     obj ++ Json.obj(
       field -> JsArray(arr.value ++ values)
     )
+  }
+
+  def convertBookObj(obj: collection.Map[String, JsValue]): List[JsArray] = {
+    obj.keys.foldLeft(List[JsArray]()) {
+      (res, bookId) =>
+        val book = obj(bookId)
+        val lv = book(SKILL_LEVEL).as[Int]
+        val name = getString(RECIPE_NAME)(book)
+        res :+ Json.arr(bookId, lv, name)
+    }
   }
 
 

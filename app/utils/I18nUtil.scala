@@ -148,14 +148,20 @@ object I18nUtil {
   }
 
   private def tranBookLearn(jsValue: JsValue)(implicit hCtxt: HandlerContext): JsArray = {
-    val ct = jsValue.as[JsArray]
-    ct.value.foldLeft(JsArray()) {
+    val books = jsValue match {
+      case JsArray(value) => value.toList
+      case JsObject(obj) => convertBookObj(obj)
+      case _ =>
+        log.error(s"book_learn format error, json: $jsValue")
+        List.empty
+    }
+    books.foldLeft(JsArray()) {
       (res, book) =>
         val bookId = book(0)
-        val name = tranIdent(Type.ITEM, bookId.as[String])
         // if level does not exist, set to 0
         val lv = if (book.as[JsArray].value.length > 1) book(1).as[Int] else 0
-        res :+ Json.arr(bookId, name, lv)
+        val name = tranIdent(Type.ITEM, bookId.as[String])
+        res :+ Json.arr(bookId, lv, name)
     }
   }
 
@@ -165,7 +171,7 @@ object I18nUtil {
         val arr = jVal.as[JsArray]
         val rpId = arr(0).as[String]
         val rpName = arr(1).as[String]
-        val finalName = if (rpName == "") tranIdent(Type.ITEM, rpId) else JsString(rpName)
+        val finalName = if (rpName == "") tranIdent(Type.ITEM, rpId) else tranString(rpName)
         res :+ Json.arr(rpId, finalName)
     }
   }

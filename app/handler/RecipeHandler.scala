@@ -37,20 +37,30 @@ object RecipeHandler extends Handler {
 
   // 将recipe id加入到book json中，从而可在book查询包含的recipe
   private def handleBookLearn(obj: JsObject)(implicit ctxt: HandlerContext): Unit = {
-    val books = getArray(BOOK_LEARN)(obj)
     val resItemId = getString(RESULT)(obj)
-    books.value.foreach {
-      book =>
-        val arr = book.as[JsArray].value
-        val bookId = arr(0).as[String]
-        val name = if (arr.length == 3) arr(2).as[String] else ""
-        val inBook = Json.arr(resItemId, name)
-        ctxt.objCache(ITEM).get(bookId) match {
-          case Some(value) =>
-            val newObj = addToArray(RECIPES, inBook)(value)
-            ctxt.objCache(ITEM)(bookId) = newObj
-          case None => throw new Exception(s"book not found, id: $bookId")
+    obj \ BOOK_LEARN match {
+      case JsDefined(field) =>
+        val bookArray = field match {
+          case JsArray(value) => value.toList
+          case JsObject(obj) => convertBookObj(obj)
+          case _ =>
+            log.error(s"book_learn format error, json: $field")
+            List.empty
         }
+        bookArray.foreach {
+          book =>
+            val arr = book.as[JsArray].value
+            val bookId = arr(0).as[String]
+            val name = if (arr.length == 3) arr(2).as[String] else ""
+            val inBook = Json.arr(resItemId, name)
+            ctxt.objCache(ITEM).get(bookId) match {
+              case Some(value) =>
+                val newObj = addToArray(RECIPES, inBook)(value)
+                ctxt.objCache(ITEM)(bookId) = newObj
+              case None => throw new Exception(s"book not found, id: $bookId")
+            }
+        }
+      case JsUndefined() =>
     }
   }
 
@@ -96,6 +106,7 @@ object RecipeHandler extends Handler {
       } else jsArray
     }
 
+    // handle field using
     var quan = JsArray()
     var tools = JsArray()
     var comp = JsArray()
@@ -115,11 +126,26 @@ object RecipeHandler extends Handler {
       }
     }
 
+    val curTools = handleList(TOOLS, getArray(TOOLS)(obj), 1) ++ tools
+    // handle tool substitution
+    val finalTools = curTools.as[JsArray].value.foldLeft(JsArray()) {
+      (res, group) =>
+        res :+ group.as[JsArray].value.foldLeft(JsArray()) {
+          (newGroup, single) =>
+            val arr = single.as[JsArray]
+            val toolId = arr(0).as[String]
+            val charges = arr(1).as[Int]
+            newGroup ++ ctxt.getToolSub(toolId).foldLeft(Json.arr(Json.arr(toolId, charges))) {
+              (singleSubs, sub) => singleSubs :+ Json.arr(sub, charges)
+            }
+        }
+    }
+
     obj ++ Json.obj(
       QUALITIES -> (getArray(QUALITIES)(obj) ++ quan),
       // ??? doc says '"tools" lists item ids of tools', but it's wrong
       // it's actually like the component field!
-      TOOLS -> (handleList(TOOLS, getArray(TOOLS)(obj), 1) ++ tools),
+      TOOLS -> finalTools,
       COMPONENTS -> (handleList(COMPONENTS, getArray(COMPONENTS)(obj), 1) ++ comp)
     )
   }
