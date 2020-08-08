@@ -61,6 +61,8 @@ object Field {
   val COMPONENTS = "components"
   val LEVEL = "level"
 
+  val REPLACE = "replace"
+  val OBSOLETE = "obsolete"
 
   // material
   val IDENT = "ident"

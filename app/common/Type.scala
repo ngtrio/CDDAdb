@@ -19,14 +19,14 @@ trait TypeLiteral {
   val PET_ARMOR = "pet_armor"
   val WHEEL = "wheel"
   val AMMUNITION_TYPE = "ammunition_type"
-  val MIGRATION = "migration" // ignore
+  val MIGRATION = "migration"
   val EFFECT_TYPE = "effect_type" // ignore
   val MAGAZINE = "magazine"
   val TOOL_QUALITY = "tool_quality"
 
   val ITEM_TYPES = List(
     BOOK, COMESTIBLE, AMMO, GENERIC, GUN, BIONIC_ITEM, TOOL, ARMOR, TOOL_ARMOR,
-    GUNMOD, BATTERY, TOOLMOD, ENGINE, PET_ARMOR, WHEEL, MAGAZINE
+    GUNMOD, BATTERY, TOOLMOD, ENGINE, PET_ARMOR, WHEEL, MAGAZINE, MIGRATION
   )
 
   val RECIPE = "recipe"

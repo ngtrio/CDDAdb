@@ -54,12 +54,28 @@ class BaseResourceManager extends ResourceManager {
     handlerCtxt.clear()
   }
 
-  private val blacklist = List(MIGRATION, EFFECT_TYPE, TALK_TOPIC, OVERMAP_TERRAIN)
+  private def shouldLoad(jsObject: JsObject): Boolean = {
+    val blacklist = List(EFFECT_TYPE, TALK_TOPIC, OVERMAP_TERRAIN)
+    val tp = getString(TYPE)(jsObject).toLowerCase
+
+    val isObsolete: Boolean = {
+      jsObject \ OBSOLETE match {
+        case JsDefined(value) => value.as[Boolean]
+        case JsUndefined() => false
+      }
+    }
+
+    val isBlack: Boolean = {
+      blacklist.contains(tp)
+    }
+
+    !isObsolete && !isBlack
+  }
 
   private def loadJson(jsObject: JsObject): Unit = {
     val tp = getString(TYPE)(jsObject).toLowerCase
     var pend = jsObject
-    if (!blacklist.contains(tp)) {
+    if (shouldLoad(jsObject)) {
       // 给obj添加附加字段
       val key = if (ITEM_TYPES.contains(tp)) {
         pend = pend ++ Json.obj(
@@ -74,10 +90,16 @@ class BaseResourceManager extends ResourceManager {
         ITEM
       } else tp
 
+      def cacheObj(ident: String, pend: JsObject): Unit = {
+        handlerCtxt.objCache(key) += ident -> pend
+        log.debug(s"json loaded: ${ident -> pend}")
+      }
+
       // 获取该json的唯一标识，不同type的唯一标识生成算法可能不一样
-      val ident = getIdent(tp)(pend)
-      handlerCtxt.objCache(key) += ident -> pend
-      log.debug(s"json loaded: ${ident -> pend}")
+      getIdent(tp)(pend) match {
+        case Left(ident) => cacheObj(ident, pend)
+        case Right(identList) => identList.foreach(cacheObj(_, pend))
+      }
     }
   }
 

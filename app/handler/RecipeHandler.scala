@@ -4,7 +4,7 @@ import common.Field._
 import common.Type._
 import play.api.Logger
 import play.api.libs.json._
-import utils.I18nUtil.{tranIdent, tranName, tranObj}
+import utils.I18nUtil.{tranIdent, tranObj}
 import utils.JsonUtil._
 
 import scala.collection.mutable
@@ -35,23 +35,16 @@ object RecipeHandler extends Handler {
     toFill ++ obj
   }
 
-  // 将recipe name加入到book json中，从而可在book查询包含的recipe
+  // 将recipe id加入到book json中，从而可在book查询包含的recipe
   private def handleBookLearn(obj: JsObject)(implicit ctxt: HandlerContext): Unit = {
     val books = getArray(BOOK_LEARN)(obj)
     val resItemId = getString(RESULT)(obj)
     books.value.foreach {
       book =>
-        // TODO: recipes array存书籍名称
         val arr = book.as[JsArray].value
         val bookId = arr(0).as[String]
-        val inBook = if (arr.length == 3) {
-          arr(2)
-        } else {
-          ctxt.objCache(ITEM).get(resItemId) match {
-            case Some(value) => tranName(value(NAME))
-            case None => throw new Exception(s"item not found, id: $resItemId")
-          }
-        }
+        val name = if (arr.length == 3) arr(2).as[String] else ""
+        val inBook = Json.arr(resItemId, name)
         ctxt.objCache(ITEM).get(bookId) match {
           case Some(value) =>
             val newObj = addToArray(RECIPES, inBook)(value)
@@ -77,19 +70,30 @@ object RecipeHandler extends Handler {
                   case Some(value) =>
                     val childComp = handleList(field, value(field).as[JsArray], multi * unit)
                     if (childComp.value.length == 1) {
-                      newAlt ++= childComp.value(0).as[JsArray]
+                      childComp(0).as[JsArray].value.foreach {
+                        elem => newAlt :+= handleMigration(elem.as[JsArray])
+                      }
                     } else {
                       throw new Exception(s"this shouldn't happen")
                     }
                   case None => throw new Exception(s"requirement not found, id: $rid, json: $obj")
                 }
               } else {
-                newAlt :+= JsArray(List(JsString(rid), JsNumber(multi * unit)))
+                newAlt :+= handleMigration(Json.arr(JsString(rid), JsNumber(multi * unit)))
               }
           }
           newComps :+= newAlt
       }
       newComps
+    }
+
+    def handleMigration(jsArray: JsArray): JsArray = {
+      val id = jsArray(0)
+      val item = ctxt.objCache(ITEM)(id.as[String])
+      val mig = getString(REPLACE)(item)
+      if (mig != "") {
+        Json.arr(mig, jsArray(1))
+      } else jsArray
     }
 
     var quan = JsArray()
@@ -125,6 +129,15 @@ object RecipeHandler extends Handler {
     ctxt.objCache(ITEM).get(result).foreach {
       x => ctxt.objCache(ITEM)(result) = x ++ Json.obj(CAN_CRAFT -> true)
     }
+    getArray(COMPONENTS)(obj).value.foreach {
+      alt =>
+        alt.as[JsArray].value.foreach {
+          com =>
+            val comId = com.as[JsArray].value(0)
+            val item = ctxt.objCache(ITEM)(comId.as[String])
+            ctxt.objCache(ITEM)(comId.as[String]) = addToArray(CRAFT_TO, JsString(result))(item)
+        }
+    }
   }
 
   override def finalize(objs: mutable.Map[String, JsObject])
@@ -132,13 +145,12 @@ object RecipeHandler extends Handler {
     objs.foreach {
       pair =>
         val (ident, obj) = pair
-        val pend = tranObj(obj, QUALITIES, TOOLS, COMPONENTS) ++ Json.obj(
-          NAME -> tranIdent(ITEM, ident)
+        val result = getString(RESULT)(obj)
+        val pend = tranObj(obj, QUALITIES, TOOLS, COMPONENTS, BOOK_LEARN) ++ Json.obj(
+          NAME -> tranIdent(ITEM, result)
         )
-        //        val name = getString(RESULT)(pend)
         ctxt.addIndex(
           s"$prefix:$ident" -> pend,
-          //          s"$prefix:$name" -> JsString(s"$prefix:$ident")
         )
     }
   }

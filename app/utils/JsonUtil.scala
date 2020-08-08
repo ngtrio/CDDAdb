@@ -83,22 +83,28 @@ object JsonUtil {
   }
 
 
-  def getIdent(tp: String)(implicit jsValue: JsValue): String = {
+  def getIdent(tp: String)(implicit jsValue: JsValue): Either[String, List[String]] = {
     val abstr = getString(Field.ABSTRACT)
     if (abstr == "") {
       tp match {
         case Type.RECIPE =>
           // see https://github.com/CleverRaven/Cataclysm-DDA/blob/30ffa2af1a1da178f3f328b54a366d60095967e4/src/recipe.cpp#L264
           if (hasField(Field.ID_SUFFIX)) {
-            s"${getString(Field.RESULT)}_${getString(Field.ID_SUFFIX)}"
+            Left(s"${getString(Field.RESULT)}_${getString(Field.ID_SUFFIX)}")
           } else {
-            s"${getString(Field.RESULT)}"
+            Left(s"${getString(Field.RESULT)}")
           }
         case Type.MATERIAL =>
-          s"${getString(Field.IDENT)}"
+          Left(s"${getString(Field.IDENT)}")
+        case Type.MIGRATION =>
+          (jsValue \ Field.ID).get match {
+            case x: JsArray => Right(x.value.map(_.as[String]).toList)
+            case x: JsString => Left(x.as[String])
+            case _ => throw new Exception("this should not happen")
+          }
         case _ =>
-          s"${getString(Field.ID)}"
+          Left(s"${getString(Field.ID)}")
       }
-    } else s"$abstr"
+    } else Left(s"$abstr")
   }
 }

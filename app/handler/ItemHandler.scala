@@ -29,12 +29,10 @@ object ItemHandler extends Handler with ColorSymbolSupport {
     objs.foreach {
       pair =>
         val (ident, obj) = pair
-        val pend = tranObj(obj, NAME, DESCRIPTION)
-        //        val name = getString(NAME)(pend)
+        val pend = tranObj(obj, NAME, DESCRIPTION, CRAFT_TO, RECIPES)
         val tp = getString(TYPE)(pend).toLowerCase
         ctxt.addIndex(
           s"$tp:$ident" -> pend,
-          //          s"$tp:$name" -> JsString(s"$tp:$ident")
         )
     }
   }

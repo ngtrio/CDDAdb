@@ -125,10 +125,8 @@ object MonsterHandler extends Handler with ColorSymbolSupport {
       pair =>
         val (ident, obj) = pair
         val pend = tranObj(obj, NAME, DESCRIPTION)
-        //        val name = getString(Field.NAME)(pend)
         ctxt.addIndex(
           s"$prefix:$ident" -> pend,
-          //          s"$prefix:$name" -> JsString(s"$prefix:$ident")
         )
     }
   }

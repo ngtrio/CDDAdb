@@ -44,8 +44,8 @@ class MemRepository @Inject()(@Named("memrm") manager: ResourceManager) extends 
       pair =>
         val k = pair._1
         val v = pair._2
-        if (k.contains(s"$tp")) {
-          val id = getIdent(tp)(v)
+        if (k.contains(tp)) {
+          val id = k.replace(s"$tp:", "")
           val name = getString(Field.NAME)(v)
           val symbol = getString(Field.SYMBOL)(v)
           val color = getField(Field.COLOR, v, JsArray())(_.as[JsArray])

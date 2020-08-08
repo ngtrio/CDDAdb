@@ -44,7 +44,8 @@ object I18nUtil {
                 log.error(s"$ex, json: $jsObject")
                 throw ex
             }
-          case JsUndefined() => log.warn(s"field: $field not found in $jsObject")
+          // if field not found, just ignore
+          case JsUndefined() => log.debug(s"field: $field not found in $jsObject")
         }
     }
     res
@@ -59,6 +60,9 @@ object I18nUtil {
         case Field.QUALITIES => tranQualities(jsValue)
         case Field.TOOLS => tranTools(jsValue)
         case Field.COMPONENTS => tranComponent(jsValue)
+        case Field.CRAFT_TO => tranCraftTo(jsValue)
+        case Field.BOOK_LEARN => tranBookLearn(jsValue)
+        case Field.RECIPES => tranRecipes(jsValue)
       }
     } catch {
       case err: Exception =>
@@ -89,6 +93,7 @@ object I18nUtil {
     val str = jsValue match {
       case res: JsString => res.value
       case res: JsObject => (res \ Field.STR).get.as[String]
+      case _ => throw new Exception(s"invalid description format json: $jsValue")
     }
     tranString(str)
   }
@@ -103,7 +108,8 @@ object I18nUtil {
         val level = getNumber(Field.LEVEL)(obj)
         val name = tranIdent(Type.TOOL_QUALITY, ident)
         res :+= Json.obj(
-          Field.ID -> name,
+          Field.ID -> ident,
+          Field.NAME -> name,
           Field.LEVEL -> level
         )
     }
@@ -125,12 +131,43 @@ object I18nUtil {
             val arr = igre.as[JsArray].value
             val ident = arr(0).as[String]
             val amount = arr(1).as[Int]
-            newAlt :+= tranIdent(Type.ITEM, ident)
-            newAlt :+= JsNumber(amount)
+            newAlt :+= Json.arr(ident, tranIdent(Type.ITEM, ident), amount)
         }
         newComponents :+= newAlt
     }
     newComponents
+  }
+
+  private def tranCraftTo(jsValue: JsValue)(implicit hCtxt: HandlerContext): JsArray = {
+    val ct = jsValue.as[JsArray]
+    ct.value.foldLeft(JsArray()) {
+      (res, id) =>
+        val name = tranIdent(Type.ITEM, id.as[String])
+        res :+ Json.arr(id, name)
+    }
+  }
+
+  private def tranBookLearn(jsValue: JsValue)(implicit hCtxt: HandlerContext): JsArray = {
+    val ct = jsValue.as[JsArray]
+    ct.value.foldLeft(JsArray()) {
+      (res, book) =>
+        val bookId = book(0)
+        val name = tranIdent(Type.ITEM, bookId.as[String])
+        // if level does not exist, set to 0
+        val lv = if (book.as[JsArray].value.length > 1) book(1).as[Int] else 0
+        res :+ Json.arr(bookId, name, lv)
+    }
+  }
+
+  private def tranRecipes(jsValue: JsValue)(implicit hctxt: HandlerContext): JsArray = {
+    jsValue.as[JsArray].value.foldLeft(JsArray()) {
+      (res, jVal) =>
+        val arr = jVal.as[JsArray]
+        val rpId = arr(0).as[String]
+        val rpName = arr(1).as[String]
+        val finalName = if (rpName == "") tranIdent(Type.ITEM, rpId) else JsString(rpName)
+        res :+ Json.arr(rpId, finalName)
+    }
   }
 
   // 将field to的翻译映射到id上
@@ -138,7 +175,10 @@ object I18nUtil {
                (implicit hCtxt: HandlerContext): JsString = {
     hCtxt.objCache(tp).get(ident) match {
       case Some(value) =>
-        val jsValue = (value \ to).get
+        val jsValue = value \ to match {
+          case JsDefined(value) => value
+          case JsUndefined() => throw new Exception(s"field $to not found in $ident")
+        }
         to match {
           case Field.NAME => tranName(jsValue)
           case _ => tranString(jsValue.as[String])
