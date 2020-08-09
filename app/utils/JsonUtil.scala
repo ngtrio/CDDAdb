@@ -6,6 +6,7 @@ import common.Field.{RECIPE_NAME, SKILL_LEVEL}
 import common.{Field, Type}
 import play.api.Logger
 import play.api.libs.json._
+import utils.StringUtil.parseColor
 
 object JsonUtil {
 
@@ -58,7 +59,8 @@ object JsonUtil {
   def getArray(field: String)(implicit jsValue: JsValue): JsArray = {
     getField(field, jsValue, JsArray()) {
       case x: JsArray => x
-      case _ => throw new Exception(s"field: $field is not an array, json: $jsValue")
+      case x: JsString => Json.arr(x)
+      case _ => throw new Exception(s"field: $field format is not supported, json: $jsValue")
     }
   }
 
@@ -83,7 +85,7 @@ object JsonUtil {
     )
   }
 
-  def convertBookObj(obj: collection.Map[String, JsValue]): List[JsArray] = {
+  def convertBookObj(obj: collection.Map[String, JsValue]): List[JsArray] =
     obj.keys.foldLeft(List[JsArray]()) {
       (res, bookId) =>
         val book = obj(bookId)
@@ -91,7 +93,18 @@ object JsonUtil {
         val name = getString(RECIPE_NAME)(book)
         res :+ Json.arr(bookId, lv, name)
     }
+
+  def handleColor(implicit obj: JsObject): JsObject = {
+    val tf = (__ \ Field.COLOR).json.update(__.read[JsString].map(
+      str => JsArray(parseColor(str.as[String]).map(JsString))))
+    transform(tf, obj)
   }
+
+  def hasFlag(flag: String)(implicit obj: JsObject): Boolean =
+    obj \ Field.FLAGS match {
+      case JsDefined(value) => value.as[JsArray].value.contains(JsString(flag))
+      case JsUndefined() => false
+    }
 
 
   def getIdent(tp: String)(implicit jsValue: JsValue): Either[String, List[String]] = {
@@ -106,7 +119,9 @@ object JsonUtil {
             Left(s"${getString(Field.RESULT)}")
           }
         case Type.MATERIAL =>
-          Left(s"${getString(Field.IDENT)}")
+          // see https://github.com/CleverRaven/Cataclysm-DDA/pull/39332
+          val id = if (hasField(Field.IDENT)) getString(Field.IDENT) else getString(Field.ID)
+          Left(id)
         case Type.MIGRATION =>
           (jsValue \ Field.ID).get match {
             case x: JsArray => Right(x.value.map(_.as[String]).toList)

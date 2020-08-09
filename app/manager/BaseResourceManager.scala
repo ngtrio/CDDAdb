@@ -4,7 +4,7 @@ import java.io.File
 
 import common.Field._
 import common.Type._
-import handler.{HandlerContext, ItemHandler, MonsterHandler, RecipeHandler}
+import handler._
 import javax.inject.{Inject, Singleton}
 import play.api.libs.json._
 import play.api.{Configuration, Logger}
@@ -239,7 +239,7 @@ class BaseResourceManager extends ResourceManager {
           case ITEM => ItemHandler.handle(objCache)
           case RECIPE => RecipeHandler.handle(objCache)
           case MONSTER => MonsterHandler.handle(objCache)
-          case _ =>
+          case _ => CommonHandler.handle(objCache)
         }
     }
 
@@ -251,7 +251,7 @@ class BaseResourceManager extends ResourceManager {
           case ITEM => ItemHandler.finalize(objCache)
           case RECIPE => RecipeHandler.finalize(objCache)
           case MONSTER => MonsterHandler.finalize(objCache)
-          case _ =>
+          case _ => CommonHandler.finalize(objCache)
         }
     }
   }

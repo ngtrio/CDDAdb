@@ -23,6 +23,7 @@ object Field {
   val DESCRIPTION = "description"
   val SYMBOL = "symbol"
   val COLOR = "color"
+  val FLAGS = "flags"
 
   // monster
   val HP = "hp"
@@ -71,11 +72,23 @@ object Field {
   // tool
   val SUB = "sub"
 
+  // armor
+  val MATERIAL_THICKNESS = "material_thickness"
+  val ENVIRONMENTAL_PROTECTION = "environmental_protection"
+  val MATERIAL = "material"
+
   // material
   val IDENT = "ident"
+  val BASH_RESIST = "bash_resist"
+  val CUT_RESIST = "cut_resist"
+  val BULLET_RESIST = "bullet_resist"
+  val ACID_RESIST = "acid_resist"
+  val ELEC_RESIST = "elec_resist"
+  val FIRE_RESIST = "fire_resist"
 
   // custom
   val CRAFT_TO = "craft_to"
   val CAN_CRAFT = "can_craft"
   val RECIPES = "recipes"
+  val CONDUCTIVE = "conductive"
 }

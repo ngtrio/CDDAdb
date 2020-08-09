@@ -9,7 +9,7 @@ import utils.JsonUtil._
 
 import scala.collection.mutable
 
-object MonsterHandler extends Handler with ColorSymbolSupport {
+object MonsterHandler extends Handler {
   private val log = Logger(MonsterHandler.getClass)
   private val prefix = MONSTER
 
