@@ -85,14 +85,23 @@ object JsonUtil {
     )
   }
 
-  def convertBookObj(obj: collection.Map[String, JsValue]): List[JsArray] =
-    obj.keys.foldLeft(List[JsArray]()) {
-      (res, bookId) =>
-        val book = obj(bookId)
-        val lv = book(SKILL_LEVEL).as[Int]
-        val name = getString(RECIPE_NAME)(book)
-        res :+ Json.arr(bookId, lv, name)
+  def convertBookLearn(jsValue: JsValue): JsArray = {
+    jsValue match {
+      case arr: JsArray => arr
+      case obj: JsObject =>
+        obj.keys.foldLeft(JsArray()) {
+          (res, bookId) =>
+            val book = obj(bookId)
+            val lv = getNumber(SKILL_LEVEL)(book).toInt
+            val name = getString(RECIPE_NAME)(book)
+            res :+ Json.arr(bookId, lv, name)
+        }
+      case _ =>
+        log.error(s"book_learn format error, json: $jsValue")
+        JsArray()
     }
+
+  }
 
   def handleColor(implicit obj: JsObject): JsObject = {
     val tf = (__ \ Field.COLOR).json.update(__.read[JsString].map(

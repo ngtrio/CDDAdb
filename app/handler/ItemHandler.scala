@@ -38,7 +38,7 @@ object ItemHandler extends Handler {
     objs.foreach {
       pair =>
         val (ident, obj) = pair
-        val pend = tranObj(obj, NAME, DESCRIPTION, CRAFT_TO, RECIPES)
+        val pend = tranObj(obj, NAME, DESCRIPTION, QUALITIES, CRAFT_TO, RECIPES)
         val tp = getString(TYPE)(pend).toLowerCase
         ctxt.addIndex(
           s"$tp:$ident" -> pend,

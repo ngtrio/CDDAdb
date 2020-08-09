@@ -40,14 +40,8 @@ object RecipeHandler extends Handler {
     val resItemId = getString(RESULT)(obj)
     obj \ BOOK_LEARN match {
       case JsDefined(field) =>
-        val bookArray = field match {
-          case JsArray(value) => value.toList
-          case JsObject(obj) => convertBookObj(obj)
-          case _ =>
-            log.error(s"book_learn format error, json: $field")
-            List.empty
-        }
-        bookArray.foreach {
+        val bookArray = convertBookLearn(field)
+        bookArray.value.foreach {
           book =>
             val arr = book.as[JsArray].value
             val bookId = arr(0).as[String]
@@ -107,9 +101,9 @@ object RecipeHandler extends Handler {
     }
 
     // handle field using
-    var quan = JsArray()
+    var qualities = JsArray()
     var tools = JsArray()
-    var comp = JsArray()
+    var components = JsArray()
     if (hasField(USING)(obj)) {
       getArray(USING)(obj).value.foreach {
         elem =>
@@ -118,9 +112,9 @@ object RecipeHandler extends Handler {
           val multi = arr(1).as[Int]
           ctxt.objCache(REQUIREMENT).get(rid) match {
             case Some(value) =>
-              quan ++= getArray(QUALITIES)(value)
+              qualities ++= getArray(QUALITIES)(value)
               tools ++= handleList(TOOLS, getArray(TOOLS)(value), multi)
-              comp ++= handleList(COMPONENTS, getArray(COMPONENTS)(value), multi)
+              components ++= handleList(COMPONENTS, getArray(COMPONENTS)(value), multi)
             case None => throw new Exception(s"requirement not found, id: $rid")
           }
       }
@@ -142,11 +136,11 @@ object RecipeHandler extends Handler {
     }
 
     obj ++ Json.obj(
-      QUALITIES -> (getArray(QUALITIES)(obj) ++ quan),
+      QUALITIES -> (getArray(QUALITIES)(obj) ++ qualities),
       // ??? doc says '"tools" lists item ids of tools', but it's wrong
       // it's actually like the component field!
       TOOLS -> finalTools,
-      COMPONENTS -> (handleList(COMPONENTS, getArray(COMPONENTS)(obj), 1) ++ comp)
+      COMPONENTS -> (handleList(COMPONENTS, getArray(COMPONENTS)(obj), 1) ++ components)
     )
   }
 

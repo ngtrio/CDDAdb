@@ -31,14 +31,15 @@ object I18nUtil {
   }
 
   def tranObj(jsObject: JsObject, toTran: String*)
-             (implicit hCtxt: HandlerContext = new HandlerContext()): JsObject = {
+             (implicit ctxt: HandlerContext = new HandlerContext()): JsObject = {
+    val tp = getString(Field.TYPE)(jsObject).toLowerCase
     var res: JsObject = jsObject
     toTran.foreach {
       field =>
         jsObject \ field match {
           case JsDefined(value) =>
             try {
-              res ++= Json.obj(field -> tranField(field, value))
+              res ++= Json.obj(field -> tranField(tp, field, value))
             } catch {
               case ex: Exception =>
                 log.error(s"$ex, json: $jsObject")
@@ -51,13 +52,13 @@ object I18nUtil {
     res
   }
 
-  private def tranField(field: String, jsValue: JsValue)(implicit hCtxt: HandlerContext): JsValue = {
+  private def tranField(tp: String, field: String, jsValue: JsValue)(implicit ctxt: HandlerContext): JsValue = {
     try {
       field match {
         case Field.NAME => tranName(jsValue)
         case Field.DESCRIPTION => tranDescription(jsValue)
         case Field.RESULT => tranIdent(Type.ITEM, jsValue.as[String])
-        case Field.QUALITIES => tranQualities(jsValue)
+        case Field.QUALITIES => tranQualities(tp, jsValue)
         case Field.TOOLS => tranTools(jsValue)
         case Field.COMPONENTS => tranComponent(jsValue)
         case Field.CRAFT_TO => tranCraftTo(jsValue)
@@ -98,29 +99,13 @@ object I18nUtil {
     tranString(str)
   }
 
-  // [ { "id": "HAMMER_FINE", "level": 1 }, { "id": "SAW_M_FINE", "level": 1 }, { "id": "SCREW_FINE", "level": 1 } ]
-  private def tranQualities(jsValue: JsValue)(implicit hCtxt: HandlerContext): JsArray = {
-    var res = JsArray()
-    val arr = jsValue.as[JsArray].value
-    arr.foreach {
-      obj =>
-        val ident = getString(Field.ID)(obj)
-        val level = getNumber(Field.LEVEL)(obj)
-        val name = tranIdent(Type.TOOL_QUALITY, ident)
-        res :+= Json.obj(
-          Field.ID -> ident,
-          Field.NAME -> name,
-          Field.LEVEL -> level
-        )
-    }
-    res
-  }
+  private def tranQualities(tp: String, jsValue: JsValue)(implicit ctxt: HandlerContext): JsArray =
+    if (Type.ITEM_TYPES.contains(tp)) tranQualitiesInItem(jsValue)
+    else tranQualitiesInRecipe(jsValue)
 
-  private def tranTools(jsValue: JsValue)(implicit hCtxt: HandlerContext): JsArray = {
-    tranComponent(jsValue)
-  }
+  private def tranTools(jsValue: JsValue)(implicit ctxt: HandlerContext): JsArray = tranComponent(jsValue)
 
-  private def tranComponent(jsValue: JsValue)(implicit hCtxt: HandlerContext): JsArray = {
+  private def tranComponent(jsValue: JsValue)(implicit ctxt: HandlerContext): JsArray = {
     val arr = jsValue.as[JsArray].value
     var newComponents = JsArray()
     arr.foreach {
@@ -138,7 +123,7 @@ object I18nUtil {
     newComponents
   }
 
-  private def tranCraftTo(jsValue: JsValue)(implicit hCtxt: HandlerContext): JsArray = {
+  private def tranCraftTo(jsValue: JsValue)(implicit ctxt: HandlerContext): JsArray = {
     val ct = jsValue.as[JsArray]
     ct.value.foldLeft(JsArray()) {
       (res, id) =>
@@ -147,25 +132,64 @@ object I18nUtil {
     }
   }
 
-  private def tranBookLearn(jsValue: JsValue)(implicit hCtxt: HandlerContext): JsArray = {
-    val books = jsValue match {
-      case JsArray(value) => value.toList
-      case JsObject(obj) => convertBookObj(obj)
+  def tranQualitiesInRecipe(jsValue: JsValue)(implicit ctxt: HandlerContext): JsArray = {
+    def tranSingleObj(obj: JsObject): JsObject = {
+      val ident = getString(Field.ID)(obj)
+      val level = getNumber(Field.LEVEL)(obj)
+      val name = tranIdent(Type.TOOL_QUALITY, ident)
+      Json.obj(
+        Field.ID -> ident,
+        Field.LEVEL -> level,
+        Field.NAME -> name
+      )
+    }
+
+    var res = JsArray()
+    val arr = jsValue.as[JsArray].value
+    arr.foreach {
+      case arr: JsArray =>
+        res :+= arr.value.foldLeft(JsArray()) {
+          (group, obj) => group :+ tranSingleObj(obj.as[JsObject])
+        }
+      case obj: JsObject => res :+= tranSingleObj(obj)
+      case _ => throw new Exception(s"invalid qualities format in recipe: $jsValue")
+    }
+    res
+  }
+
+  def tranBookLearn(jsValue: JsValue)(implicit ctxt: HandlerContext): JsArray = {
+    val nestedArr = jsValue match {
+      case x: JsArray => x
+      case x: JsObject => convertBookLearn(x)
       case _ =>
         log.error(s"book_learn format error, json: $jsValue")
-        List.empty
+        JsArray.empty
     }
-    books.foldLeft(JsArray()) {
-      (res, book) =>
-        val bookId = book(0)
-        // if level does not exist, set to 0
-        val lv = if (book.as[JsArray].value.length > 1) book(1).as[Int] else 0
-        val name = tranIdent(Type.ITEM, bookId.as[String])
-        res :+ Json.arr(bookId, lv, name)
+    tranNestedArray(Type.ITEM, nestedArr)
+  }
+
+  def tranQualitiesInItem(jsValue: JsValue)(implicit ctxt: HandlerContext): JsArray = {
+    val nestedArr = jsValue.as[JsArray]
+    tranNestedArray(Type.TOOL_QUALITY, nestedArr)
+  }
+
+  /**
+   * 翻译格式如"[["aa", 1], ["bb", 1]]"的字段
+   * 1. recipe->book_learn
+   * 2. item->qualities
+   */
+  private def tranNestedArray(tp: String, jsArray: JsArray)(implicit ctxt: HandlerContext): JsArray = {
+    jsArray.value.foldLeft(JsArray()) {
+      (res, arr) =>
+        val len = arr.as[JsArray].value.length
+        val id = arr(0).as[String]
+        val name = tranIdent(tp, id).as[String]
+        val lv = if (len > 1) arr(1).as[Int] else 0
+        res :+ Json.arr(id, lv, name)
     }
   }
 
-  private def tranRecipes(jsValue: JsValue)(implicit hctxt: HandlerContext): JsArray = {
+  private def tranRecipes(jsValue: JsValue)(implicit ctxt: HandlerContext): JsArray = {
     jsValue.as[JsArray].value.foldLeft(JsArray()) {
       (res, jVal) =>
         val arr = jVal.as[JsArray]
@@ -178,8 +202,8 @@ object I18nUtil {
 
   // 将field to的翻译映射到id上
   def tranIdent(tp: String, ident: String, to: String = Field.NAME)
-               (implicit hCtxt: HandlerContext): JsString = {
-    hCtxt.objCache(tp).get(ident) match {
+               (implicit ctxt: HandlerContext): JsString = {
+    ctxt.objCache(tp).get(ident) match {
       case Some(value) =>
         val jsValue = value \ to match {
           case JsDefined(value) => value

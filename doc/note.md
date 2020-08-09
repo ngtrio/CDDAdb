@@ -6,6 +6,15 @@
 # color格式
 [官方文档](https://github.com/CleverRaven/Cataclysm-DDA/blob/master/doc/COLOR.md)
 
+# TODO
+- [ ] downloader
+- [ ] add armor layer field
+
+# 多格式字段
+recipe->book_learn
+migration->id
+item->material
+
 # Monster
 
 ## difficulty
@@ -54,8 +63,8 @@ static creature_size volume_to_size( const units::volume &vol )
     return creature_size::huge;
 }
 ```
-# Armor
-## 防护
+# Item
+## Armor防护
 ```
 int item::bash_resist( bool to_self ) const
 {
@@ -101,4 +110,27 @@ int item::bash_resist( bool to_self ) const
 ### attack time 
 ```
 int ret = 65 + ( volume() / 62.5_ml + weight() / 60_gram ) / 1;
+```
+
+## conductive
+```
+
+bool item::conductive() const
+{
+
+    if( has_flag( flag_CONDUCTIVE ) ) {
+        return true;
+    }
+
+    if( has_flag( flag_NONCONDUCTIVE ) ) {
+        return false;
+    }
+
+    // If any material has electricity resistance equal to or lower than flesh (1) we are conductive.
+    const std::vector<const material_type *> &mats = made_of_types();
+    return std::any_of( mats.begin(), mats.end(), []( const material_type * mt ) {
+        return mt->elec_resist() <= 1;
+    } );
+}
+
 ```
