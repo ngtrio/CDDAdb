@@ -1,6 +1,9 @@
 package utils
 
 import java.io._
+import java.nio.charset.Charset
+
+import common.FileType
 
 import scala.collection.mutable.ListBuffer
 import scala.io.Source
@@ -87,6 +90,17 @@ object FileUtil {
         child => node.subNodes += doTree(child)
       }
       node
+    }
+  }
+
+  def writeToFile(is: InputStream, path: String, fileType: Int): Unit = {
+    val file = new File(path)
+    if (fileType == FileType.TEXT) {
+      val reader = new BufferedReader(new InputStreamReader(is, Charset.forName("UTF-8")))
+      reader.transferTo(new BufferedWriter(new FileWriter(file)))
+    } else {
+      val bis = new BufferedInputStream(is)
+      bis.transferTo(new BufferedOutputStream(new FileOutputStream(file)))
     }
   }
 }

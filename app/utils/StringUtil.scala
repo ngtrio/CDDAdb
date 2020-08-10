@@ -25,4 +25,10 @@ object StringUtil {
       }
     } else Array("", "")
   }
+
+  def isZipExt(name: String): Boolean =
+    name.substring(name.lastIndexOf(".") + 1, name.length).toLowerCase == "zip"
+
+  // bytes 0-0/39519700
+  def parseContentChange(value: String): Long = value.split("/")(1).toInt
 }
