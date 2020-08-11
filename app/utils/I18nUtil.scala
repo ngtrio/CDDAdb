@@ -57,11 +57,10 @@ object I18nUtil {
       field match {
         case Field.NAME => tranName(jsValue)
         case Field.DESCRIPTION => tranDescription(jsValue)
-        case Field.RESULT => tranIdent(Type.ITEM, jsValue.as[String])
         case Field.QUALITIES => tranQualities(tp, jsValue)
         case Field.TOOLS => tranTools(jsValue)
         case Field.COMPONENTS => tranComponent(jsValue)
-        case Field.CRAFT_TO => tranCraftTo(jsValue)
+        case Field.CRAFT_TO | Field.UNCRAFT_FROM => tranCraft(jsValue)
         case Field.BOOK_LEARN => tranBookLearn(jsValue)
         case Field.RECIPES => tranRecipes(jsValue)
       }
@@ -123,7 +122,7 @@ object I18nUtil {
     newComponents
   }
 
-  private def tranCraftTo(jsValue: JsValue)(implicit ctxt: HandlerContext): JsArray = {
+  private def tranCraft(jsValue: JsValue)(implicit ctxt: HandlerContext): JsArray = {
     val ct = jsValue.as[JsArray]
     ct.value.foldLeft(JsArray()) {
       (res, id) =>

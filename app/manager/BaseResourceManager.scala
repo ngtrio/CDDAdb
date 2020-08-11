@@ -15,11 +15,11 @@ import scala.collection.mutable
 
 @Singleton
 class BaseResourceManager extends ResourceManager {
-  protected val log: Logger = Logger(this.getClass)
+  private val log: Logger = Logger(this.getClass)
 
-  protected var poPath: String = _
-  protected var dataPath: List[String] = _
-  implicit protected var handlerCtxt: HandlerContext = new HandlerContext()
+  private var poPath: String = _
+  private var dataPath: List[String] = _
+  implicit private val handlerCtxt: HandlerContext = new HandlerContext()
 
   @Inject
   def this(config: Configuration) = {
@@ -36,6 +36,13 @@ class BaseResourceManager extends ResourceManager {
   }
 
   override def update(): List[(String, JsValue)] = {
+    // update resource files
+    // retries at most 3 times for bad network
+    val retries = 3
+    var flag = false
+    for (_ <- 1 to retries; if !flag)
+      flag = ResourceUpdater.update()
+
     try {
       dataPath.foreach {
         path =>
@@ -79,6 +86,7 @@ class BaseResourceManager extends ResourceManager {
       pend = addCustomField(tp, pend)
 
       val key = if (ITEM_TYPES.contains(tp)) ITEM else tp
+
       def cacheObj(ident: String, pend: JsObject): Unit = {
         handlerCtxt.objCache(key) += ident -> pend
         log.debug(s"json loaded: ${ident -> pend}")
@@ -105,6 +113,8 @@ class BaseResourceManager extends ResourceManager {
       pend ++= Json.obj(
         CRAFT_TO -> JsArray(),
         CAN_CRAFT -> JsBoolean(false),
+        UNCRAFT_FROM -> JsArray(),
+        CAN_UNCRAFT -> JsBoolean(false)
       )
       if (tp == BOOK) {
         pend ++= jsObject ++ Json.obj(
@@ -237,7 +247,7 @@ class BaseResourceManager extends ResourceManager {
         val (tp, objCache) = cacheMap
         tp match {
           case ITEM => ItemHandler.handle(objCache)
-          case RECIPE => RecipeHandler.handle(objCache)
+          case RECIPE | UNCRAFT => RecipeHandler.handle(objCache)
           case MONSTER => MonsterHandler.handle(objCache)
           case _ => CommonHandler.handle(objCache)
         }
@@ -249,7 +259,7 @@ class BaseResourceManager extends ResourceManager {
         val (tp, objCache) = cacheMap
         tp match {
           case ITEM => ItemHandler.finalize(objCache)
-          case RECIPE => RecipeHandler.finalize(objCache)
+          case RECIPE | UNCRAFT => RecipeHandler.finalize(objCache)
           case MONSTER => MonsterHandler.finalize(objCache)
           case _ => CommonHandler.finalize(objCache)
         }

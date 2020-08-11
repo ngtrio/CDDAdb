@@ -61,6 +61,7 @@ object Field {
   val TOOLS = "tools"
   val COMPONENTS = "components"
   val LEVEL = "level"
+  val REVERSIBLE = "reversible"
 
   val REPLACE = "replace"
   val OBSOLETE = "obsolete"
@@ -87,8 +88,13 @@ object Field {
   val FIRE_RESIST = "fire_resist"
 
   // custom
-  val CRAFT_TO = "craft_to"
-  val CAN_CRAFT = "can_craft"
-  val RECIPES = "recipes"
-  val CONDUCTIVE = "conductive"
+  // 添加至item下的所有类型
+  val CRAFT_TO = "craft_to" // 能够以此item为原料制作的items
+  val CAN_CRAFT = "can_craft" // 该item能否被制作
+  val UNCRAFT_FROM = "uncraft_from" // 能够通过拆解获得此item的items
+  val CAN_UNCRAFT = "can_uncraft" // 该item能否被拆解
+  val CONDUCTIVE = "conductive" // 该item是否导电
+
+  // 添加至book类型
+  val RECIPES = "recipes" // 书中所包含的recipes
 }

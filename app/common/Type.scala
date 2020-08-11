@@ -30,6 +30,7 @@ trait TypeLiteral {
   )
 
   val RECIPE = "recipe"
+  val UNCRAFT = "uncraft"
   val MATERIAL = "material"
   val REQUIREMENT = "requirement"
   val MONSTER = "monster"

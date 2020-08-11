@@ -64,6 +64,13 @@ object JsonUtil {
     }
   }
 
+  def getBoolean(field: String)(implicit jsValue: JsValue): Boolean = {
+    getField(field, jsValue, false) {
+      case JsBoolean(bool) => bool
+      case _ => throw new Exception(s"field: $field is not a bool")
+    }
+  }
+
   def hasField(field: String)(implicit jsValue: JsValue): Boolean = {
     jsValue \ field match {
       case _: JsDefined => true
@@ -120,7 +127,7 @@ object JsonUtil {
     val abstr = getString(Field.ABSTRACT)
     if (abstr == "") {
       tp match {
-        case Type.RECIPE =>
+        case Type.RECIPE | Type.UNCRAFT =>
           // see https://github.com/CleverRaven/Cataclysm-DDA/blob/30ffa2af1a1da178f3f328b54a366d60095967e4/src/recipe.cpp#L264
           if (hasField(Field.ID_SUFFIX)) {
             Left(s"${getString(Field.RESULT)}_${getString(Field.ID_SUFFIX)}")

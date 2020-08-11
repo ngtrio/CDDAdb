@@ -26,22 +26,21 @@ object ResourceUpdater {
 
   def update(): Boolean = {
     import utils.FileUtil.unzip
-
-    val latestUri = getLatestBuildUri
-    val transifexCookie = secretConf.getString("transifex-cookie")
-    if (latestUri != "") {
-      try {
+    try {
+      val latestUri = getLatestBuildUri
+      val transifexCookie = secretConf.getString("transifex-cookie")
+      if (latestUri != "") {
         download(latestUri, dataPath, FileType.BINARY)
-        //        download(transUri, transPath, FileType.TEXT, "cookie" -> transifexCookie)
+        download(transUri, transPath, FileType.TEXT, "cookie" -> transifexCookie)
 
         unzip(dataPath, dataDir)
         true
-      } catch {
-        case e: Exception =>
-          e.printStackTrace()
-          false
-      }
-    } else false
+      } else false
+    } catch {
+      case e: Exception =>
+        e.printStackTrace()
+        false
+    }
   }
 
   private def download(uri: String, path: String, fileType: Int, headers: (String, String)*): Unit = {

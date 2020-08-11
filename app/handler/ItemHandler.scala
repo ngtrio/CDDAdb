@@ -3,7 +3,7 @@ package handler
 import common.Field._
 import common.Type
 import play.api.Logger
-import play.api.libs.json.{JsArray, JsDefined, JsObject, Json}
+import play.api.libs.json.{JsArray, JsObject, Json}
 import utils.I18nUtil.tranObj
 import utils.JsonUtil._
 
@@ -38,7 +38,7 @@ object ItemHandler extends Handler {
     objs.foreach {
       pair =>
         val (ident, obj) = pair
-        val pend = tranObj(obj, NAME, DESCRIPTION, QUALITIES, CRAFT_TO, RECIPES)
+        val pend = tranObj(obj, NAME, DESCRIPTION, QUALITIES, CRAFT_TO, RECIPES, UNCRAFT_FROM)
         val tp = getString(TYPE)(pend).toLowerCase
         ctxt.addIndex(
           s"$tp:$ident" -> pend,
@@ -47,11 +47,6 @@ object ItemHandler extends Handler {
   }
 
   private def calArmorProtection(implicit obj: JsObject, ctxt: HandlerContext): JsObject = {
-    val id = obj \ ID match {
-      case JsDefined(value) => value.as[String]
-      case _ => ""
-    }
-
     def baseResit(rType: String, mts: JsArray): Double =
       mts.value.foldLeft(0.0) {
         (res, mtId) => {

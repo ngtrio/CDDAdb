@@ -3,4 +3,4 @@ appender("STDOUT", ConsoleAppender) {
         pattern = "%d{HH:mm:ss.SSS} %-5level %logger{36} - %msg%n"
     }
 }
-root(WARN, ["STDOUT"])
+root(INFO, ["STDOUT"])
