@@ -1,24 +1,40 @@
 package utils
 
-import java.io._
+import java.io.{File, _}
 import java.nio.charset.Charset
 
 import common.FileType
+import play.api.Logger
 
 import scala.collection.mutable.ListBuffer
 import scala.io.Source
 
 object FileUtil {
+  private val log = Logger(FileUtil.getClass)
+  private val File = better.files.File
+
   def classpathFileReader(filename: String): Reader =
     Source.fromResource(filename).reader()
 
   def workDirFile(filename: String): File = new File(filename)
 
   // 移动文件
-  def mv(dir: String): Unit = ???
+  def mv(from: String, to: String): Unit = File(from).moveTo(File(to))
 
-  // 删除文件，r -> recursive
-  def rm(path: String, r: Boolean): Nothing = ???
+  // 删除文件，recursive
+  def rm(path: String): Unit = File(path).delete()
+
+  // unzip
+  def unzip(file: String, to: String): Unit = {
+    TimeUtil.stopwatch {
+      log.info(s"unzip: $file to $to")
+      val toDir = File(to)
+      if (toDir.exists) {
+        rm(to)
+      }
+      File(file).unzipTo(File(to))
+    }
+  }
 
   // modes of ls
   val MIX = 0
@@ -97,10 +113,10 @@ object FileUtil {
     val file = new File(path)
     if (fileType == FileType.TEXT) {
       val reader = new BufferedReader(new InputStreamReader(is, Charset.forName("UTF-8")))
-      reader.transferTo(new BufferedWriter(new FileWriter(file)))
+      reader.transferTo(new FileWriter(file))
     } else {
       val bis = new BufferedInputStream(is)
-      bis.transferTo(new BufferedOutputStream(new FileOutputStream(file)))
+      bis.transferTo(new FileOutputStream(file))
     }
   }
 }
