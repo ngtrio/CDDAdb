@@ -13,8 +13,9 @@ import utils.TimeUtil.stopwatch
 object ResourceUpdater {
   private val log = Logger(this.getClass)
   private val commonConf = ConfigFactory.load("common.conf")
-  // secret.conf is in the parent dir
-  private val secretConf = ConfigFactory.parseFileAnySyntax(new File("../prod.conf"))
+  // prod.conf is the config file only on the production server
+  // except transifex-cookie there is also play.http.secret.key in this file
+  private val secretConf = ConfigFactory.parseFileAnySyntax(new File("/cddadb-conf/prod.conf"))
 
   private val transUri = commonConf.getString("uri.transUri")
   private val dataPath = "data/cdda.zip"

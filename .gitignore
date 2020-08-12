@@ -4,4 +4,3 @@
 *.po
 data
 .idea
-conf/secret.conf
