@@ -12,12 +12,12 @@ import utils.TimeUtil.stopwatch
 
 object ResourceUpdater {
   private val log = Logger(this.getClass)
-  private val commonConf = ConfigFactory.load("common.conf")
+  private val commonConf = ConfigFactory.load("application.conf")
   // prod.conf is the config file only on the production server
   // except transifex-cookie there is also play.http.secret.key in this file
   private val secretConf = ConfigFactory.parseFileAnySyntax(new File("/cddadb-conf/prod.conf"))
 
-  private val transUri = commonConf.getString("uri.transUri")
+  private val transUri = commonConf.getString("transUri")
   private val dataPath = "data/cdda.zip"
   private val dataDir = "data/cdda"
   private val transPath = "data/zh.po"
@@ -91,7 +91,7 @@ object ResourceUpdater {
 
     import scala.jdk.CollectionConverters._
 
-    val gamePageUri = commonConf.getString("uri.gamePageUri")
+    val gamePageUri = commonConf.getString("gamePageUri")
     val doc = Jsoup.connect(gamePageUri).get
     val buildName = doc.getElementsByTag("h2").get(0).text
     log.info(s"latest build: $buildName")

@@ -111,6 +111,8 @@ object FileUtil {
 
   def writeToFile(is: InputStream, path: String, fileType: Int): Unit = {
     val file = new File(path)
+    // if data directory does not exists, this will create
+    file.getParentFile.mkdirs()
     if (fileType == FileType.TEXT) {
       val reader = new BufferedReader(new InputStreamReader(is, Charset.forName("UTF-8")))
       reader.transferTo(new FileWriter(file))

@@ -1,4 +1,5 @@
-FROM hseeberger/scala-sbt:11.0.7_1.3.10_2.13.2
-COPY . /cddaDB
-WORKDIR /cddaDB
-ENTRYPOINT ["sbt", "run"]
+FROM adoptopenjdk:11.0.8_10-jdk-hotspot
+COPY target/universal/cddadb/ /cddadb
+WORKDIR /cddadb
+EXPOSE 9000
+ENTRYPOINT ["./bin/cddadb", "-Dconfig.file=/cddadb-conf/prod.conf"]
