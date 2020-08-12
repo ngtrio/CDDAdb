@@ -63,6 +63,7 @@ object I18nUtil {
         case Field.CRAFT_TO | Field.UNCRAFT_FROM => tranCraft(jsValue)
         case Field.BOOK_LEARN => tranBookLearn(jsValue)
         case Field.RECIPES => tranRecipes(jsValue)
+        case Field.MATERIAL => tranMaterial(jsValue)
       }
     } catch {
       case err: Exception =>
@@ -122,14 +123,11 @@ object I18nUtil {
     newComponents
   }
 
-  private def tranCraft(jsValue: JsValue)(implicit ctxt: HandlerContext): JsArray = {
-    val ct = jsValue.as[JsArray]
-    ct.value.foldLeft(JsArray()) {
-      (res, id) =>
-        val name = tranIdent(Type.ITEM, id.as[String])
-        res :+ Json.arr(id, name)
-    }
-  }
+  private def tranCraft(jsValue: JsValue)(implicit ctxt: HandlerContext): JsArray =
+    tranArray(Type.ITEM, jsValue)
+
+  private def tranMaterial(jsValue: JsValue)(implicit ctxt: HandlerContext): JsArray =
+    tranArray(Type.MATERIAL, jsValue)
 
   def tranQualitiesInRecipe(jsValue: JsValue)(implicit ctxt: HandlerContext): JsArray = {
     def tranSingleObj(obj: JsObject): JsObject = {
@@ -173,7 +171,7 @@ object I18nUtil {
   }
 
   /**
-   * 翻译格式如"[["aa", 1], ["bb", 1]]"的字段
+   * 翻译格式如[["aa", 1], ["bb", 1]]的字段
    * 1. recipe->book_learn
    * 2. item->qualities
    */
@@ -185,6 +183,21 @@ object I18nUtil {
         val name = tranIdent(tp, id).as[String]
         val lv = if (len > 1) arr(1).as[Int] else 0
         res :+ Json.arr(id, lv, name)
+    }
+  }
+
+  /**
+   * 翻译格式如["a", "b", "c"]的字段
+   * 1. item->material
+   * 2. item->craft_to
+   * 3. item->uncraft_from
+   */
+  private def tranArray(tp: String, jsValue: JsValue)(implicit ctxt: HandlerContext): JsArray = {
+    val ct = jsValue.as[JsArray]
+    ct.value.foldLeft(JsArray()) {
+      (res, id) =>
+        val name = tranIdent(tp, id.as[String])
+        res :+ Json.arr(id, name)
     }
   }
 

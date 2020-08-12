@@ -1,7 +1,7 @@
 package handler
 
 import common.Field._
-import common.Type._
+import common.Type
 import play.api.Logger
 import play.api.libs.json._
 import utils.I18nUtil.{tranIdent, tranObj}
@@ -50,10 +50,10 @@ object RecipeHandler extends Handler {
             val bookId = arr(0).as[String]
             val name = if (arr.length == 3) arr(2).as[String] else ""
             val inBook = Json.arr(resItemId, name)
-            ctxt.objCache(ITEM).get(bookId) match {
+            ctxt.objCache(Type.ITEM).get(bookId) match {
               case Some(value) =>
                 val newObj = addToArray(RECIPES, inBook)(value)
-                ctxt.objCache(ITEM)(bookId) = newObj
+                ctxt.objCache(Type.ITEM)(bookId) = newObj
               case None => throw new Exception(s"book not found, id: $bookId")
             }
         }
@@ -73,7 +73,7 @@ object RecipeHandler extends Handler {
               val rid = arr(0).as[String]
               val multi = arr(1).as[Int]
               if (arr.length == 3 && arr(2).as[String] == "LIST") {
-                ctxt.objCache(REQUIREMENT).get(rid) match {
+                ctxt.objCache(Type.REQUIREMENT).get(rid) match {
                   case Some(value) =>
                     val childComp = handleList(field, value(field).as[JsArray], multi * unit)
                     if (childComp.value.length == 1) {
@@ -96,7 +96,7 @@ object RecipeHandler extends Handler {
 
     def handleMigration(jsArray: JsArray): JsArray = {
       val id = jsArray(0)
-      val item = ctxt.objCache(ITEM)(id.as[String])
+      val item = ctxt.objCache(Type.ITEM)(id.as[String])
       val mig = getString(REPLACE)(item)
       if (mig != "") {
         Json.arr(mig, jsArray(1))
@@ -113,7 +113,7 @@ object RecipeHandler extends Handler {
           val arr = elem.as[JsArray].value
           val rid = arr(0).as[String]
           val multi = arr(1).as[Int]
-          ctxt.objCache(REQUIREMENT).get(rid) match {
+          ctxt.objCache(Type.REQUIREMENT).get(rid) match {
             case Some(value) =>
               qualities ++= getArray(QUALITIES)(value)
               tools ++= handleList(TOOLS, getArray(TOOLS)(value), multi)
@@ -154,16 +154,16 @@ object RecipeHandler extends Handler {
 
     // if there is an uncraft or recipe can reverse,
     // we set CAN_UNCRAFT to true
-    if (tp == UNCRAFT || reversible) {
-      ctxt.objCache(ITEM).get(result).foreach {
-        x => ctxt.objCache(ITEM)(result) = x ++ Json.obj(CAN_UNCRAFT -> true)
+    if (tp == Type.UNCRAFT || reversible) {
+      ctxt.objCache(Type.ITEM).get(result).foreach {
+        x => ctxt.objCache(Type.ITEM)(result) = x ++ Json.obj(CAN_UNCRAFT -> true)
       }
     }
 
     // if type is recipe, we also should set CAN_CRAFT to true
-    if (tp == RECIPE) {
-      ctxt.objCache(ITEM).get(result).foreach {
-        x => ctxt.objCache(ITEM)(result) = x ++ Json.obj(CAN_CRAFT -> true)
+    if (tp == Type.RECIPE) {
+      ctxt.objCache(Type.ITEM).get(result).foreach {
+        x => ctxt.objCache(Type.ITEM)(result) = x ++ Json.obj(CAN_CRAFT -> true)
       }
     }
 
@@ -173,15 +173,15 @@ object RecipeHandler extends Handler {
           com =>
             val comId = com.as[JsArray].value(0)
 
-            if (tp == UNCRAFT || reversible) {
-              val item = ctxt.objCache(ITEM)(comId.as[String])
-              ctxt.objCache(ITEM)(comId.as[String]) =
+            if (tp == Type.UNCRAFT || reversible) {
+              val item = ctxt.objCache(Type.ITEM)(comId.as[String])
+              ctxt.objCache(Type.ITEM)(comId.as[String]) =
                 addToArray(UNCRAFT_FROM, JsString(result))(item)
             }
 
-            if (tp == RECIPE) {
-              val item = ctxt.objCache(ITEM)(comId.as[String])
-              ctxt.objCache(ITEM)(comId.as[String]) =
+            if (tp == Type.RECIPE) {
+              val item = ctxt.objCache(Type.ITEM)(comId.as[String])
+              ctxt.objCache(Type.ITEM)(comId.as[String]) =
                 addToArray(CRAFT_TO, JsString(result))(item)
             }
         }
@@ -196,12 +196,12 @@ object RecipeHandler extends Handler {
         val tp = getString(TYPE)(obj).toLowerCase
 
         val result = getString(RESULT)(obj)
-        val pend = tranObj(obj, QUALITIES, TOOLS, COMPONENTS, BOOK_LEARN) ++ Json.obj(
-          NAME -> tranIdent(ITEM, result)
+        val pend = tranObj(obj, QUALITIES, TOOLS, COMPONENTS, BOOK_LEARN, MATERIAL) ++ Json.obj(
+          NAME -> tranIdent(Type.ITEM, result)
         )
         val key = tp match {
-          case RECIPE => s"$RECIPE:$ident"
-          case UNCRAFT => s"$UNCRAFT:$ident"
+          case Type.RECIPE => s"${Type.RECIPE}:$ident"
+          case Type.UNCRAFT => s"${Type.UNCRAFT}:$ident"
         }
         ctxt.addIndex(key -> pend)
     }

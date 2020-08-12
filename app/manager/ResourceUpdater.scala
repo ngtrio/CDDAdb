@@ -1,5 +1,6 @@
 package manager
 
+import java.io.File
 import java.net.URI
 import java.net.http.{HttpClient, HttpRequest, HttpResponse}
 
@@ -12,7 +13,8 @@ import utils.TimeUtil.stopwatch
 object ResourceUpdater {
   private val log = Logger(this.getClass)
   private val commonConf = ConfigFactory.load("common.conf")
-  private val secretConf = ConfigFactory.load("secret.conf")
+  // secret.conf is in the parent dir
+  private val secretConf = ConfigFactory.parseFileAnySyntax(new File("../prod.conf"))
 
   private val transUri = commonConf.getString("uri.transUri")
   private val dataPath = "data/cdda.zip"
@@ -27,8 +29,8 @@ object ResourceUpdater {
   def update(): Boolean = {
     import utils.FileUtil.unzip
     try {
-      val latestUri = getLatestBuildUri
       val transifexCookie = secretConf.getString("transifex-cookie")
+      val latestUri = getLatestBuildUri
       if (latestUri != "") {
         download(latestUri, dataPath, FileType.BINARY)
         download(transUri, transPath, FileType.TEXT, "cookie" -> transifexCookie)
