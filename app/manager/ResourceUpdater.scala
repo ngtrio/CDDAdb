@@ -32,11 +32,9 @@ object ResourceUpdater {
 
     val transifexCookie = secretConf.getString("transifex-cookie")
     val latestUri = getLatestBuildUri
-    if (latestUri != "") {
-      if (download(latestUri, dataPath, FileType.BINARY)) {
-        unzip(dataPath, dataDir)
-        download(transUri, transPath, FileType.TEXT, "cookie" -> transifexCookie)
-      } else false
+    if (latestUri != "" && download(latestUri, dataPath, FileType.BINARY)) {
+      unzip(dataPath, dataDir)
+      download(transUri, transPath, FileType.TEXT, "cookie" -> transifexCookie)
     } else false
   }
 

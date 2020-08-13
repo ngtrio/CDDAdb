@@ -202,8 +202,10 @@ object I18nUtil {
             val name = tranIdent(tp, id.as[String])
             res :+ Json.arr(id, name)
         }
+      case _ =>
+        log.error(s"material format error, json: $jsValue")
+        JsArray.empty
     }
-
   }
 
   private def tranRecipes(jsValue: JsValue)(implicit ctxt: HandlerContext): JsArray = {

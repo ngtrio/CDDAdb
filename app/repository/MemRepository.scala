@@ -1,7 +1,7 @@
 package repository
 
 import common.Field
-import javax.inject.{Inject, Named, Singleton}
+import javax.inject.{Inject, Singleton}
 import manager.ResourceManager
 import play.api.Logger
 import play.api.libs.json.{JsArray, JsObject, JsValue, Json}
@@ -10,7 +10,7 @@ import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 
 @Singleton
-class MemRepository @Inject()(@Named("memrm") manager: ResourceManager) extends Repository {
+class MemRepository @Inject()(manager: ResourceManager) extends Repository {
   private val log = Logger(this.getClass)
 
   // key -> JsValue

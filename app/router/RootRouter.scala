@@ -1,12 +1,11 @@
 package router
 
 import controller.MainController
-import javax.inject.{Inject, Singleton}
+import javax.inject.Inject
 import play.api.routing.Router.Routes
 import play.api.routing._
 import play.api.routing.sird._
 
-@Singleton
 class RootRouter @Inject()(testCtl: MainController)
   extends SimpleRouter {
 

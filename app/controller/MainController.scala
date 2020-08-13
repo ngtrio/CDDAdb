@@ -1,10 +1,9 @@
 package controller
 
-import javax.inject.{Inject, Singleton}
+import javax.inject.Inject
 import play.api.mvc._
 import repository.MemRepository
 
-@Singleton
 class MainController @Inject()(cc: ControllerComponents,
                                repo: MemRepository
                               ) extends AbstractController(cc) {
