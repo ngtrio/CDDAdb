@@ -187,18 +187,23 @@ object I18nUtil {
   }
 
   /**
-   * 翻译格式如["a", "b", "c"]的字段
+   * 翻译格式如["a", "b", "c"] or single string的字段
    * 1. item->material
    * 2. item->craft_to
    * 3. item->uncraft_from
    */
   private def tranArray(tp: String, jsValue: JsValue)(implicit ctxt: HandlerContext): JsArray = {
-    val ct = jsValue.as[JsArray]
-    ct.value.foldLeft(JsArray()) {
-      (res, id) =>
-        val name = tranIdent(tp, id.as[String])
-        res :+ Json.arr(id, name)
+    jsValue match {
+      // "paper" -> [["paper", "纸"]]
+      case x: JsString => Json.arr(Json.arr(tranIdent(tp, x.as[String])))
+      case x: JsArray =>
+        x.value.foldLeft(JsArray()) {
+          (res, id) =>
+            val name = tranIdent(tp, id.as[String])
+            res :+ Json.arr(id, name)
+        }
     }
+
   }
 
   private def tranRecipes(jsValue: JsValue)(implicit ctxt: HandlerContext): JsArray = {

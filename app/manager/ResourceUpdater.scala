@@ -29,48 +29,51 @@ object ResourceUpdater {
 
   def update(): Boolean = {
     import utils.FileUtil.unzip
-    try {
-      val transifexCookie = secretConf.getString("transifex-cookie")
-      val latestUri = getLatestBuildUri
-      if (latestUri != "") {
-        download(latestUri, dataPath, FileType.BINARY)
-        download(transUri, transPath, FileType.TEXT, "cookie" -> transifexCookie)
 
+    val transifexCookie = secretConf.getString("transifex-cookie")
+    val latestUri = getLatestBuildUri
+    if (latestUri != "") {
+      if (download(latestUri, dataPath, FileType.BINARY)) {
         unzip(dataPath, dataDir)
-        true
+        download(transUri, transPath, FileType.TEXT, "cookie" -> transifexCookie)
       } else false
-    } catch {
-      case e: Exception =>
-        e.printStackTrace()
-        false
-    }
+    } else false
   }
 
-  private def download(uri: String, path: String, fileType: Int, headers: (String, String)*): Unit = {
+  private def download(uri: String, path: String, fileType: Int, headers: (String, String)*): Boolean = {
     import HttpResponse.BodyHandlers.{discarding, ofInputStream}
 
     import utils.FileUtil.writeToFile
     import utils.StringUtil.parseContentChange
 
-    // use Range head to get the content-length
-    val initRequest = genRequest(uri, headers :+ "Range" -> "bytes=0-0": _*)
-    val initResponse = httpClient.send(initRequest, discarding())
-    val contentChange = initResponse.headers().allValues("Content-Range")
-    val downloadRequest = if (contentChange.size > 0) {
-      val contentLength = parseContentChange(contentChange.get(0))
-      val MB = 1024 * 1024.0
-      log.info(s"downloading to $path, size: ${f"${contentLength / MB}%.2f"} MB")
+    retry {
+      try {
+        // use Range head to get the content-length
+        val initRequest = genRequest(uri, headers :+ "Range" -> "bytes=0-0": _*)
+        val initResponse = httpClient.send(initRequest, discarding())
+        val contentChange = initResponse.headers().allValues("Content-Range")
+        val downloadRequest = if (contentChange.size > 0) {
+          val contentLength = parseContentChange(contentChange.get(0))
+          val MB = 1024 * 1024.0
+          log.info(s"downloading to $path, size: ${f"${contentLength / MB}%.2f"} MB")
 
-      val range = s"bytes=0-$contentLength"
-      genRequest(uri, headers :+ "Range" -> range: _*)
-    } else {
-      // if there is no content-range header, then do direct get
-      log.info(s"downloading to $path, size: unknown")
-      genRequest(uri)
-    }
-    stopwatch {
-      val downloadResponse = httpClient.send(downloadRequest, ofInputStream())
-      writeToFile(downloadResponse.body(), path, fileType)
+          val range = s"bytes=0-$contentLength"
+          genRequest(uri, headers :+ "Range" -> range: _*)
+        } else {
+          // if there is no content-range header, then do direct get
+          log.info(s"downloading to $path, size: unknown")
+          genRequest(uri)
+        }
+        stopwatch {
+          val downloadResponse = httpClient.send(downloadRequest, ofInputStream())
+          writeToFile(downloadResponse.body(), path, fileType)
+        }
+        true
+      } catch {
+        case e: Exception =>
+          e.printStackTrace()
+          false
+      }
     }
   }
 
@@ -91,19 +94,39 @@ object ResourceUpdater {
 
     import scala.jdk.CollectionConverters._
 
-    val gamePageUri = commonConf.getString("gamePageUri")
-    val doc = Jsoup.connect(gamePageUri).get
-    val buildName = doc.getElementsByTag("h2").get(0).text
-    log.info(s"latest build: $buildName")
+    var res = ""
+    retry {
+      try {
+        val gamePageUri = commonConf.getString("gamePageUri")
+        val doc = Jsoup.connect(gamePageUri).get
+        val buildName = doc.getElementsByTag("h2").get(0).text
+        log.info(s"latest build: $buildName")
 
-    val links = doc
-      .getElementsByTag("ul")
-      .get(0)
-      .getElementsByTag("a")
-    val uris = links.asScala.map(_.attr("href"))
-    uris.foldLeft("") {
-      (res, elem) =>
-        if (isZipExt(elem)) elem else res
+        val links = doc
+          .getElementsByTag("ul")
+          .get(0)
+          .getElementsByTag("a")
+        val uris = links.asScala.map(_.attr("href"))
+        res = uris.foldLeft("") {
+          (res, elem) =>
+            if (isZipExt(elem)) elem else res
+        }
+        true
+      } catch {
+        case e: Exception =>
+          e.printStackTrace()
+          false
+      }
     }
+    res
+  }
+
+  private def retry(block: => Boolean): Boolean = {
+    var flag = false
+    for (i <- 1 to 3; if !flag) {
+      if (i > 1) log.info(s"(${i - 1})retry")
+      flag = block
+    }
+    flag
   }
 }

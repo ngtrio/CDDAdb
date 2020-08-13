@@ -21,9 +21,12 @@ class MemRepository @Inject()(@Named("memrm") manager: ResourceManager) extends 
 
   override protected def updateIndexes(): Unit = {
     manager.update().foreach {
-      pair =>
-        val (key, value) = pair
-        idx += key -> value
+      res =>
+        res.foreach {
+          pair =>
+            val (key, value) = pair
+            idx += key -> value
+        }
     }
   }
 

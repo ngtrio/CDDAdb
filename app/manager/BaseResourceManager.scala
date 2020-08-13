@@ -35,26 +35,21 @@ class BaseResourceManager extends ResourceManager {
     this.dataPath = dataPath
   }
 
-  override def update(): List[(String, JsValue)] = {
-    // update resource files
-    // retries at most 3 times for bad network
-    val retries = 3
-    var flag = false
-    for (_ <- 1 to retries; if !flag)
-      flag = ResourceUpdater.update()
-
-    try {
-      dataPath.foreach {
-        path =>
-          val files = ls(new File(path), recursive = true, ONLY_FILE)
-          files.foreach(fromFile(_).foreach(loadJson))
+  override def update(): Option[List[(String, JsValue)]] = {
+    if (ResourceUpdater.update()) {
+      try {
+        dataPath.foreach {
+          path =>
+            val files = ls(new File(path), recursive = true, ONLY_FILE)
+            files.foreach(fromFile(_).foreach(loadJson))
+        }
+        copyFrom()
+        postProcess()
+        Some(handlerCtxt.indexed.toList)
+      } finally {
+        clear()
       }
-      copyFrom()
-      postProcess()
-      handlerCtxt.indexed.toList
-    } finally {
-      clear()
-    }
+    } else None
   }
 
   private def clear(): Unit = {
