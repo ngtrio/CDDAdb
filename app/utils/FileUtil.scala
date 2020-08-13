@@ -115,10 +115,16 @@ object FileUtil {
     file.getParentFile.mkdirs()
     if (fileType == FileType.TEXT) {
       val reader = new BufferedReader(new InputStreamReader(is, Charset.forName("UTF-8")))
-      reader.transferTo(new FileWriter(file))
+      val writer = new BufferedWriter(new FileWriter(file))
+      reader.transferTo(writer)
+      writer.close()
+      reader.close()
     } else {
       val bis = new BufferedInputStream(is)
-      bis.transferTo(new FileOutputStream(file))
+      val bos = new BufferedOutputStream(new FileOutputStream(file))
+      bis.transferTo(bos)
+      bos.close()
+      bis.close()
     }
   }
 }

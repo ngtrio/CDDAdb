@@ -12,7 +12,7 @@ for file in $files; do
     popd
     # echo "CDDADB_VERSION=$version" >.env
     docker-compose down
-    docker rmi docker:latest
+    docker rmi cddadb:latest
     docker-compose up -d
   fi
 done
