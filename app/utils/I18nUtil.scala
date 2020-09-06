@@ -15,7 +15,7 @@ object I18nUtil {
   private val trans = mutable.Map[String, mutable.Map[String, String]]()
   private val poParser = POParser()
   log.info("loading translation file for the first time, wait...")
-  private val res = poParser.fromFile("data/zh.po").parse
+  private val res = poParser.fromFile("data/lang.po").parse
 
   res.foreach {
     case POParser.SingleTrans(msgctxt, msgid, msgstr) =>

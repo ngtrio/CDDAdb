@@ -36,20 +36,20 @@ class BaseResourceManager extends ResourceManager {
   }
 
   override def update(): Option[List[(String, JsValue)]] = {
-    if (ResourceUpdater.update()) {
-      try {
-        dataPath.foreach {
-          path =>
-            val files = ls(new File(path), recursive = true, ONLY_FILE)
-            files.foreach(fromFile(_).foreach(loadJson))
-        }
-        copyFrom()
-        postProcess()
-        Some(handlerCtxt.indexed.toList)
-      } finally {
-        clear()
+    // updater is rewrote in python, see scripts/update.py
+    // if (ResourceUpdater.update()) {
+    try {
+      dataPath.foreach { path =>
+        val files = ls(new File(path), recursive = true, ONLY_FILE)
+        files.foreach(fromFile(_).foreach(loadJson))
       }
-    } else None
+      copyFrom()
+      postProcess()
+      Some(handlerCtxt.indexed.toList)
+    } finally {
+      clear()
+    }
+    // } else None
   }
 
   private def clear(): Unit = {
@@ -63,7 +63,7 @@ class BaseResourceManager extends ResourceManager {
     val isObsolete: Boolean = {
       jsObject \ OBSOLETE match {
         case JsDefined(value) => value.as[Boolean]
-        case JsUndefined() => false
+        case JsUndefined()    => false
       }
     }
 
@@ -122,54 +122,60 @@ class BaseResourceManager extends ResourceManager {
 
   // 将所有加载到的json进行copy-from处理
   private def copyFrom(): Unit = {
-    handlerCtxt.objCaches.foreach {
-      cacheMap =>
-        val (_, objCache) = cacheMap
-        objCache.foreach {
-          pair =>
-            val (ident, obj) = pair
-            handleCopyFrom(obj, ident, objCache)
-        }
+    handlerCtxt.objCaches.foreach { cacheMap =>
+      val (_, objCache) = cacheMap
+      objCache.foreach { pair =>
+        val (ident, obj) = pair
+        handleCopyFrom(obj, ident, objCache)
+      }
     }
   }
 
   /**
-   * 处理json inheritance
-   * 继承规则：https://github.com/CleverRaven/Cataclysm-DDA/blob/master/doc/JSON_INHERITANCE.md
-   *
-   * @param ident 该类型的唯一标识
-   */
-  private def handleCopyFrom(jsObject: JsObject, ident: String,
-                             objCache: mutable.Map[String, JsObject]): JsObject = {
+    * 处理json inheritance
+    * 继承规则：https://github.com/CleverRaven/Cataclysm-DDA/blob/master/doc/JSON_INHERITANCE.md
+    *
+    * @param ident 该类型的唯一标识
+    */
+  private def handleCopyFrom(
+      jsObject: JsObject,
+      ident: String,
+      objCache: mutable.Map[String, JsObject]
+  ): JsObject = {
 
     // 处理relative和proportional
     def valueInherit(obj: JsObject, field: String) = {
-      val valIhrFunc = (n: JsNumber, v: BigDecimal) => field match {
-        case RELATIVE => JsNumber(n.value + v)
-        case PROPORTIONAL => JsNumber(n.value * v)
-      }
+      val valIhrFunc = (n: JsNumber, v: BigDecimal) =>
+        field match {
+          case RELATIVE     => JsNumber(n.value + v)
+          case PROPORTIONAL => JsNumber(n.value * v)
+        }
 
       def handleObj(path: JsPath, toPath: JsPath, o: JsObject): JsObject = {
         var pend = o
         val t = o.transform(path.json.pick[JsObject]).get
-        t.keys.foreach {
-          key =>
-            t(key) match {
-              case _: JsObject =>
-                pend = handleObj(path \ key, toPath \ key, pend)
-              case x: JsNumber =>
-                val tf = pend.transform((toPath \ key).json.pick[JsNumber]) match {
+        t.keys.foreach { key =>
+          t(key) match {
+            case _: JsObject =>
+              pend = handleObj(path \ key, toPath \ key, pend)
+            case x: JsNumber =>
+              val tf =
+                pend.transform((toPath \ key).json.pick[JsNumber]) match {
                   case JsSuccess(_, _) =>
-                    (toPath \ key).json.update(__.read[JsNumber].map(n => valIhrFunc(n, x.value)))
+                    (toPath \ key).json.update(
+                      __.read[JsNumber].map(n => valIhrFunc(n, x.value))
+                    )
                   case JsError(_) =>
-                    __.json.update((toPath \ key).json.put(valIhrFunc(JsNumber(0), x.value)))
+                    __.json.update(
+                      (toPath \ key).json.put(valIhrFunc(JsNumber(0), x.value))
+                    )
                 }
-                pend.transform(tf) match {
-                  case JsSuccess(value, _) => pend = value
-                  case JsError(err) => log.info(err.toString())
-                }
-              case _ =>
-            }
+              pend.transform(tf) match {
+                case JsSuccess(value, _) => pend = value
+                case JsError(err)        => log.info(err.toString())
+              }
+            case _ =>
+          }
         }
         pend
       }
@@ -187,23 +193,24 @@ class BaseResourceManager extends ResourceManager {
       var pend = obj
       pend.transform((__ \ field).json.pick[JsObject]) match {
         case JsSuccess(fieldObj, _) =>
-          fieldObj.keys.foreach {
-            key =>
-              val v = fieldObj(key)
-              pend = pend \ key match {
-                case JsDefined(_) =>
-                  val tf = field match {
-                    case EXTEND =>
-                      // 如果出错就说明extend的字段在父json中可以以非数组形式存在（文档没说，遇到bug再改）
-                      (__ \ key).json.update(__.read[JsArray].map(arr => arr ++ v.as[JsArray]))
-                    case DELETE =>
-                      (__ \ key).json.prune
-                  }
-                  pend.transform(tf).get
-                case JsUndefined() =>
-                  if (field == EXTEND) pend ++ Json.obj(key -> v)
-                  else pend
-              }
+          fieldObj.keys.foreach { key =>
+            val v = fieldObj(key)
+            pend = pend \ key match {
+              case JsDefined(_) =>
+                val tf = field match {
+                  case EXTEND =>
+                    // 如果出错就说明extend的字段在父json中可以以非数组形式存在（文档没说，遇到bug再改）
+                    (__ \ key).json.update(
+                      __.read[JsArray].map(arr => arr ++ v.as[JsArray])
+                    )
+                  case DELETE =>
+                    (__ \ key).json.prune
+                }
+                pend.transform(tf).get
+              case JsUndefined() =>
+                if (field == EXTEND) pend ++ Json.obj(key -> v)
+                else pend
+            }
           }
           Some(pend - field)
         case JsError(_) => Some(pend)
@@ -229,7 +236,9 @@ class BaseResourceManager extends ResourceManager {
             res.get
           // 资源文件出错
           case None =>
-            log.error(s"In id: $ident, parent: $parId required, but not found in files")
+            log.error(
+              s"In id: $ident, parent: $parId required, but not found in files"
+            )
             jsObject
         }
     }
@@ -237,27 +246,25 @@ class BaseResourceManager extends ResourceManager {
 
   private def postProcess(): Unit = {
     // 任何字段处理都必须在本循环处理完
-    handlerCtxt.objCaches.foreach {
-      cacheMap =>
-        val (tp, objCache) = cacheMap
-        tp match {
-          case ITEM => ItemHandler.handle(objCache)
-          case RECIPE | UNCRAFT => RecipeHandler.handle(objCache)
-          case MONSTER => MonsterHandler.handle(objCache)
-          case _ => CommonHandler.handle(objCache)
-        }
+    handlerCtxt.objCaches.foreach { cacheMap =>
+      val (tp, objCache) = cacheMap
+      tp match {
+        case ITEM             => ItemHandler.handle(objCache)
+        case RECIPE | UNCRAFT => RecipeHandler.handle(objCache)
+        case MONSTER          => MonsterHandler.handle(objCache)
+        case _                => CommonHandler.handle(objCache)
+      }
     }
 
     // 翻译、构建索引等
-    handlerCtxt.objCaches.foreach {
-      cacheMap =>
-        val (tp, objCache) = cacheMap
-        tp match {
-          case ITEM => ItemHandler.finalize(objCache)
-          case RECIPE | UNCRAFT => RecipeHandler.finalize(objCache)
-          case MONSTER => MonsterHandler.finalize(objCache)
-          case _ => CommonHandler.finalize(objCache)
-        }
+    handlerCtxt.objCaches.foreach { cacheMap =>
+      val (tp, objCache) = cacheMap
+      tp match {
+        case ITEM             => ItemHandler.finalize(objCache)
+        case RECIPE | UNCRAFT => RecipeHandler.finalize(objCache)
+        case MONSTER          => MonsterHandler.finalize(objCache)
+        case _                => CommonHandler.finalize(objCache)
+      }
     }
   }
 }
