@@ -1,0 +1,11 @@
+{{helloMsg}}
+<ul>
+  <li *ngFor="let monster of monsters">
+    <div *ngIf="monster['color']; let color">
+      <span [ngStyle]="{color: color[0], backgroundColor: color[1]}">
+        {{monster['symbol']}}
+      </span>
+      {{monster['name']}}
+    </div>
+  </li>
+</ul>
