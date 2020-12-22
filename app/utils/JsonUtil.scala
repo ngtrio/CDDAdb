@@ -45,6 +45,7 @@ object JsonUtil {
   def getString(field: String)(implicit jsValue: JsValue): String = {
     getField(field, jsValue, "") {
       case JsString(value) => value
+      case JsNumber(value) => value.toString()
       case _ => throw new Exception(s"field: $field is not a string, json: $jsValue")
     }
   }
@@ -111,9 +112,8 @@ object JsonUtil {
   }
 
   def handleColor(implicit obj: JsObject): JsObject = {
-    val tf = (__ \ Field.COLOR).json.update(__.read[JsString].map(
-      str => JsArray(parseColor(str.as[String]).map(JsString))))
-    transform(tf, obj)
+    val newColor = JsArray(parseColor(getString(Field.COLOR)).map(str => JsString(str)))
+    obj ++ JsObject(Map(Field.COLOR -> newColor))
   }
 
   def hasFlag(flag: String)(implicit obj: JsObject): Boolean =

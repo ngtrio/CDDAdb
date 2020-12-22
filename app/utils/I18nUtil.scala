@@ -1,5 +1,6 @@
 package utils
 
+import com.typesafe.config.ConfigFactory
 import common.{Field, Type}
 import handler.HandlerContext
 import parser.POParser
@@ -11,11 +12,12 @@ import scala.collection.mutable
 
 object I18nUtil {
   private val log = Logger(this.getClass)
+  private val commonConf = ConfigFactory.load("application.conf")
 
   private val trans = mutable.Map[String, mutable.Map[String, String]]()
   private val poParser = POParser()
   log.info("loading translation file for the first time, wait...")
-  private val res = poParser.fromFile("data/lang.po").parse
+  private val res = poParser.fromFile(commonConf.getString("poPath")).parse
 
   res.foreach {
     case POParser.SingleTrans(msgctxt, msgid, msgstr) =>
