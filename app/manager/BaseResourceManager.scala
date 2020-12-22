@@ -18,64 +18,48 @@ class BaseResourceManager extends ResourceManager {
   private val log: Logger = Logger(this.getClass)
 
   private var poPath: String = _
-  private var dataPath: List[String] = _
-  implicit private val handlerCtxt: HandlerContext = new HandlerContext()
+  private var jsonPath: List[String] = _
+  implicit private val handlerCtx: HandlerContext = new HandlerContext()
 
   @Inject
   def this(config: Configuration) = {
     this()
     this.poPath = config.get[String]("poPath")
-    this.dataPath = config.get[Seq[String]]("dataPath").toList
+    this.jsonPath = config.get[Seq[String]]("jsonPath").toList
   }
 
   // for direct usage
-  def this(poPath: String, dataPath: List[String]) = {
+  def this(poPath: String, jsonPath: List[String]) = {
     this()
     this.poPath = poPath
-    this.dataPath = dataPath
+    this.jsonPath = jsonPath
   }
 
   override def update(): Option[List[(String, JsValue)]] = {
-    // updater is rewrote in python, see scripts/update.py
-    // if (ResourceUpdater.update()) {
-    try {
-      dataPath.foreach { path =>
-        val files = ls(new File(path), recursive = true, ONLY_FILE)
-        files.foreach(fromFile(_).foreach(loadJson))
+    if (ResourceUpdater.update()) {
+      try {
+        jsonPath.foreach { path =>
+          val files = ls(new File(path), recursive = true, ONLY_FILE)
+          files.foreach(fromFile(_).foreach(loadJson))
+        }
+        copyFrom()
+        postProcess()
+        Some(handlerCtx.indexed.toList)
+      } finally {
+        clear()
       }
-      copyFrom()
-      postProcess()
-      Some(handlerCtxt.indexed.toList)
-    } finally {
-      clear()
+    } else {
+      log.info("Download latest source failed, skip update...")
+      None
     }
-    // } else None
   }
 
   private def clear(): Unit = {
-    handlerCtxt.clear()
-  }
-
-  private def shouldLoad(jsObject: JsObject): Boolean = {
-    val blacklist = List(EFFECT_TYPE, TALK_TOPIC, OVERMAP_TERRAIN)
-    val tp = getString(TYPE)(jsObject).toLowerCase
-
-    val isObsolete: Boolean = {
-      jsObject \ OBSOLETE match {
-        case JsDefined(value) => value.as[Boolean]
-        case JsUndefined()    => false
-      }
-    }
-
-    val isBlack: Boolean = {
-      blacklist.contains(tp)
-    }
-
-    !isObsolete && !isBlack
+    handlerCtx.clear()
   }
 
   private def loadJson(jsObject: JsObject): Unit = {
-    val tp = getString(TYPE)(jsObject).toLowerCase
+    val tp = getString(TYPE) (jsObject).toLowerCase
     var pend = jsObject
     if (shouldLoad(jsObject)) {
       pend = addCustomField(tp, pend)
@@ -83,7 +67,7 @@ class BaseResourceManager extends ResourceManager {
       val key = if (ITEM_TYPES.contains(tp)) ITEM else tp
 
       def cacheObj(ident: String, pend: JsObject): Unit = {
-        handlerCtxt.objCache(key) += ident -> pend
+        handlerCtx.objCache(key) += ident -> pend
         log.debug(s"json loaded: ${ident -> pend}")
       }
 
@@ -94,11 +78,29 @@ class BaseResourceManager extends ResourceManager {
           // cache tool substitution
           if (tp == TOOL) {
             val sub = getString(SUB)(pend)
-            handlerCtxt.addToolSub(sub, ident)
+            handlerCtx.addToolSub(sub, ident)
           }
         case Right(identList) => identList.foreach(cacheObj(_, pend))
       }
     }
+  }
+
+  private def shouldLoad(jsObject: JsObject): Boolean = {
+    val blacklist = List(EFFECT_TYPE, TALK_TOPIC, OVERMAP_TERRAIN)
+    val tp = getString(TYPE)(jsObject).toLowerCase
+
+    val isObsolete: Boolean = {
+      jsObject \ OBSOLETE match {
+        case JsDefined(value) => value.as[Boolean]
+        case JsUndefined() => false
+      }
+    }
+
+    val isBlack: Boolean = {
+      blacklist.contains(tp)
+    }
+
+    !isObsolete && !isBlack
   }
 
   /** add custom field, see [[common.Type]] */
@@ -122,7 +124,7 @@ class BaseResourceManager extends ResourceManager {
 
   // 将所有加载到的json进行copy-from处理
   private def copyFrom(): Unit = {
-    handlerCtxt.objCaches.foreach { cacheMap =>
+    handlerCtx.objCaches.foreach { cacheMap =>
       val (_, objCache) = cacheMap
       objCache.foreach { pair =>
         val (ident, obj) = pair
@@ -132,22 +134,22 @@ class BaseResourceManager extends ResourceManager {
   }
 
   /**
-    * 处理json inheritance
-    * 继承规则：https://github.com/CleverRaven/Cataclysm-DDA/blob/master/doc/JSON_INHERITANCE.md
-    *
-    * @param ident 该类型的唯一标识
-    */
+   * 处理json inheritance
+   * 继承规则：https://github.com/CleverRaven/Cataclysm-DDA/blob/master/doc/JSON_INHERITANCE.md
+   *
+   * @param ident 该类型的唯一标识
+   */
   private def handleCopyFrom(
-      jsObject: JsObject,
-      ident: String,
-      objCache: mutable.Map[String, JsObject]
-  ): JsObject = {
+                              jsObject: JsObject,
+                              ident: String,
+                              objCache: mutable.Map[String, JsObject]
+                            ): JsObject = {
 
     // 处理relative和proportional
     def valueInherit(obj: JsObject, field: String) = {
       val valIhrFunc = (n: JsNumber, v: BigDecimal) =>
         field match {
-          case RELATIVE     => JsNumber(n.value + v)
+          case RELATIVE => JsNumber(n.value + v)
           case PROPORTIONAL => JsNumber(n.value * v)
         }
 
@@ -172,7 +174,7 @@ class BaseResourceManager extends ResourceManager {
                 }
               pend.transform(tf) match {
                 case JsSuccess(value, _) => pend = value
-                case JsError(err)        => log.info(err.toString())
+                case JsError(err) => log.info(err.toString())
               }
             case _ =>
           }
@@ -246,24 +248,24 @@ class BaseResourceManager extends ResourceManager {
 
   private def postProcess(): Unit = {
     // 任何字段处理都必须在本循环处理完
-    handlerCtxt.objCaches.foreach { cacheMap =>
+    handlerCtx.objCaches.foreach { cacheMap =>
       val (tp, objCache) = cacheMap
       tp match {
-        case ITEM             => ItemHandler.handle(objCache)
+        case ITEM => ItemHandler.handle(objCache)
         case RECIPE | UNCRAFT => RecipeHandler.handle(objCache)
-        case MONSTER          => MonsterHandler.handle(objCache)
-        case _                => CommonHandler.handle(objCache)
+        case MONSTER => MonsterHandler.handle(objCache)
+        case _ => CommonHandler.handle(objCache)
       }
     }
 
     // 翻译、构建索引等
-    handlerCtxt.objCaches.foreach { cacheMap =>
+    handlerCtx.objCaches.foreach { cacheMap =>
       val (tp, objCache) = cacheMap
       tp match {
-        case ITEM             => ItemHandler.finalize(objCache)
+        case ITEM => ItemHandler.finalize(objCache)
         case RECIPE | UNCRAFT => RecipeHandler.finalize(objCache)
-        case MONSTER          => MonsterHandler.finalize(objCache)
-        case _                => CommonHandler.finalize(objCache)
+        case MONSTER => MonsterHandler.finalize(objCache)
+        case _ => CommonHandler.finalize(objCache)
       }
     }
   }

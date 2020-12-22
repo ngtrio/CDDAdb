@@ -25,14 +25,14 @@ object FileUtil {
   def rm(path: String): Unit = File(path).delete()
 
   // unzip
-  def unzip(file: String, to: String): Unit = {
+  def unzip(file: String, to: String): Boolean = {
     TimeUtil.stopwatch {
       log.info(s"unzip: $file to $to")
       val toDir = File(to)
       if (toDir.exists) {
         rm(to)
       }
-      File(file).unzipTo(File(to))
+      File(file).unzipTo(File(to)) != null
     }
   }
 

@@ -1,1 +1,3 @@
-->        /        router.RootRouter
+GET /favicon.ico    controllers.Assets.at(path="/public", file="favicon.ico")
+GET /:tp            controllers.MainController.listAll(tp)
+GET /:tp/:id        controllers.MainController.getInfo(tp, id)

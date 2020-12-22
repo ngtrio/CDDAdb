@@ -13,6 +13,7 @@ ext_path = 'data/cdda'
 # po file path
 po_path = 'data/lang.po'
 
+
 def _gen_i18n_file(local: str):
     """
 
@@ -27,32 +28,41 @@ def _gen_i18n_file(local: str):
     else:
         print(f'Mo file of {local} is not found!')
 
+
 def _get_latest_url() -> str:
     body = requests.get(exp_url).text
     bs = BeautifulSoup(body, 'html.parser')
 
-    title = bs.h2.text
-    print(f'Latest experimental build: {title}')
+    latest_title = bs.h2.text
+    print(f'Lasted: {latest_title}')
 
-    build_list = bs.ul.find_all('a')
-    for build in build_list:
-        name: str = build.text
-        if name.find("Windows_x64") != -1:
-            return build['href']
+    for block in bs.find_all('h2'):
+        ul = block.find_next_sibling('ul')
+        for build in ul.find_all('a'):
+            name: str = build.text
+            if name.find(".zip") != -1:
+                res: str = build['href']
+                if block.text != latest_title:
+                    print(f'No latest zip found, so use {block.text}')
+                return res.replace('github.com', 'github.wuyanzheshui.workers.dev')
     return ''
+
 
 def _download() -> str:
     dl_url = _get_latest_url()
     if dl_url == '':
         print('Getting the latest build failed, exit...')
         return ''
+    print(f"download from {dl_url}...")
     res = requests.get(dl_url, stream=True)
     cd = res.headers['content-disposition']
-    filename = cd[cd.find('filename=')+9:]
+    filename = cd[cd.find('filename=') + 9:]
     filepath = f'data/{filename}'
     MB = 1024 * 1024
     size = int(res.headers['content-length']) / MB
 
+    if not os.path.exists('data'):
+        os.makedirs('data')
     print(f'Downloading to data/{filename}, size: {size}MB')
 
     with open(filepath, 'wb') as file:
@@ -61,11 +71,13 @@ def _download() -> str:
     print('Done!!')
     return filepath
 
+
 def _extract(filepath):
     print(f'Extracting {filepath} to {ext_path} ...')
     with zipfile.ZipFile(filepath) as file:
         file.extractall(ext_path)
     print('Done!！')
+
 
 if __name__ == "__main__":
     filepath = _download()
