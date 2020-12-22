@@ -19,6 +19,7 @@ class BaseResourceManager extends ResourceManager {
 
   private var poPath: String = _
   private var jsonPath: List[String] = _
+  private var notUpdate: Boolean = _
   implicit private val handlerCtx: HandlerContext = new HandlerContext()
 
   @Inject
@@ -26,6 +27,7 @@ class BaseResourceManager extends ResourceManager {
     this()
     this.poPath = config.get[String]("poPath")
     this.jsonPath = config.get[Seq[String]]("jsonPath").toList
+    this.notUpdate = config.get[Boolean]("notUpdate")
   }
 
   // for direct usage
@@ -36,7 +38,7 @@ class BaseResourceManager extends ResourceManager {
   }
 
   override def update(): Option[List[(String, JsValue)]] = {
-    if (ResourceUpdater.update()) {
+    if (notUpdate || ResourceUpdater.update()) {
       try {
         jsonPath.foreach { path =>
           val files = ls(new File(path), recursive = true, ONLY_FILE)
