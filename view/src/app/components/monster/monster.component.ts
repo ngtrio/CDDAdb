@@ -1,17 +1,19 @@
 import {Component, OnInit} from '@angular/core';
-import {HomeService} from "../home.service";
+import {HomeService} from "../../services/home.service";
 
 @Component({
   selector: 'app-home',
-  templateUrl: './home.component.html',
-  styleUrls: ['./home.component.scss']
+  templateUrl: './monster.component.html',
+  styleUrls: ['./monster.component.scss']
 })
-export class HomeComponent implements OnInit {
+export class MonsterComponent implements OnInit {
 
   helloMsg = 'Welcome to CDDADb!'
   monsters: Object[]
+  dense: boolean;
 
   constructor(private homeService: HomeService) {
+    this.dense = true
   }
 
   ngOnInit(): void {

@@ -1,0 +1,17 @@
+<div>
+  <h3>Monster</h3>
+  <mat-chip-list>
+    <mat-chip *ngFor="let monster of monsters">
+      <div *ngIf="monster['color']; let color">
+      <span [ngStyle]="{color: color[0], backgroundColor: color[1]}">
+        {{monster['symbol']}}
+      </span>
+      <span>
+        {{monster['name']}}
+      </span>
+      </div>
+    </mat-chip>
+  </mat-chip-list>
+</div>
+
+

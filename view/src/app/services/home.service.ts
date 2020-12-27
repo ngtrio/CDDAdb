@@ -10,7 +10,7 @@ export class HomeService {
   constructor(private http: HttpClient) { }
 
   getMonsters(): Observable<Object[]> {
-    let uri = 'http://localhost:9000/monster'
+    let uri = 'http://localhost:3000/monster'
     return this.http.get<Object[]>(uri)
   }
 }

@@ -26,6 +26,114 @@
         "pink",
         ""
       ]
+    },
+    {
+      "id": "mon_zombie_master",
+      "name": "丧尸主宰",
+      "symbol": "Z",
+      "color": [
+        "pink",
+        "red"
+      ]
+    },
+    {
+      "id": "mon_mech_recon",
+      "name": "X-03：\"幽灵\"型侦察机甲",
+      "symbol": "M",
+      "color": [
+        "blue",
+        ""
+      ]
+    },
+    {
+      "id": "mon_breather_hub",
+      "name": "呼吸者",
+      "symbol": "O",
+      "color": [
+        "pink",
+        ""
+      ]
+    },
+    {
+      "id": "mon_zombie_master",
+      "name": "丧尸主宰",
+      "symbol": "Z",
+      "color": [
+        "pink",
+        "red"
+      ]
+    },
+    {
+      "id": "mon_mech_recon",
+      "name": "X-03：\"幽灵\"型侦察机甲",
+      "symbol": "M",
+      "color": [
+        "blue",
+        ""
+      ]
+    },
+    {
+      "id": "mon_breather_hub",
+      "name": "呼吸者",
+      "symbol": "O",
+      "color": [
+        "pink",
+        ""
+      ]
+    },
+    {
+      "id": "mon_zombie_master",
+      "name": "丧尸主宰",
+      "symbol": "Z",
+      "color": [
+        "pink",
+        "red"
+      ]
+    },
+    {
+      "id": "mon_mech_recon",
+      "name": "X-03：\"幽灵\"型侦察机甲",
+      "symbol": "M",
+      "color": [
+        "blue",
+        ""
+      ]
+    },
+    {
+      "id": "mon_breather_hub",
+      "name": "呼吸者",
+      "symbol": "O",
+      "color": [
+        "pink",
+        ""
+      ]
+    },
+    {
+      "id": "mon_zombie_master",
+      "name": "丧尸主宰",
+      "symbol": "Z",
+      "color": [
+        "pink",
+        "red"
+      ]
+    },
+    {
+      "id": "mon_mech_recon",
+      "name": "X-03：\"幽灵\"型侦察机甲",
+      "symbol": "M",
+      "color": [
+        "blue",
+        ""
+      ]
+    },
+    {
+      "id": "mon_breather_hub",
+      "name": "呼吸者",
+      "symbol": "O",
+      "color": [
+        "pink",
+        ""
+      ]
     }
   ],
   "mon_zombie_master": {
