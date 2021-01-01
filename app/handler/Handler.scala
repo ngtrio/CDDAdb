@@ -1,5 +1,6 @@
 package handler
 
+import manager.HandlerContext
 import play.api.libs.json.JsObject
 
 import scala.collection.mutable

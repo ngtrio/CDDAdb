@@ -2,6 +2,7 @@ package handler
 
 import common.Field._
 import common.Type
+import manager.HandlerContext
 import play.api.Logger
 import play.api.libs.json._
 import utils.I18nUtil.{tranIdent, tranObj}

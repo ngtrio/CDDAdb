@@ -1,4 +1,4 @@
-package handler
+package manager
 
 import play.api.Logger
 import play.api.libs.json.{JsObject, JsValue}
@@ -29,7 +29,7 @@ class HandlerContext(val objCaches: mutable.Map[String, mutable.Map[String, JsOb
   def addIndex(indexes: (String, JsValue)*): Unit = {
     indexes.foreach {
       pair =>
-        log.info(s"indexed: ${pair._1}")
+        log.debug(s"indexed: ${pair._1}")
         indexed += pair
     }
   }

@@ -97,4 +97,9 @@ object Field {
 
   // 添加至book类型
   val RECIPES = "recipes" // 书中所包含的recipes
+
+
+  // mod
+  val DEPENDENCIES = "dependencies"
+  val PATH = "path"
 }

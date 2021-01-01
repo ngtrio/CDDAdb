@@ -30,7 +30,7 @@ object JsonUtil {
       }
     } catch {
       case _: Exception =>
-        log.info("skipped: " + file.getName)
+        log.debug("skipped: " + file.getName)
         List.empty[JsObject]
     }
   }
@@ -46,29 +46,37 @@ object JsonUtil {
     getField(field, jsValue, "") {
       case JsString(value) => value
       case JsNumber(value) => value.toString()
-      case _ => throw new Exception(s"field: $field is not a string, json: $jsValue")
+      case _ =>
+        log.warn(s"field: $field is not a string, json: $jsValue")
+        ""
     }
   }
 
   def getNumber(field: String)(implicit jsValue: JsValue): BigDecimal = {
     getField(field, jsValue, BigDecimal(0)) {
       case JsNumber(value) => value
-      case _ => throw new Exception(s"field: $field is not a number")
+      case _ =>
+        log.warn(s"field: $field is not a number")
+        BigDecimal(0)
     }
   }
 
   def getArray(field: String)(implicit jsValue: JsValue): JsArray = {
-    getField(field, jsValue, JsArray()) {
+    getField(field, jsValue, JsArray.empty) {
       case x: JsArray => x
       case x: JsString => Json.arr(x)
-      case _ => throw new Exception(s"field: $field format is not supported, json: $jsValue")
+      case _ =>
+        log.warn(s"field: $field format is not supported, json: $jsValue")
+        JsArray.empty
     }
   }
 
   def getBoolean(field: String)(implicit jsValue: JsValue): Boolean = {
     getField(field, jsValue, false) {
       case JsBoolean(bool) => bool
-      case _ => throw new Exception(s"field: $field is not a bool")
+      case _ =>
+        log.warn(s"field: $field is not a bool")
+        false
     }
   }
 
@@ -105,7 +113,7 @@ object JsonUtil {
             res :+ Json.arr(bookId, lv, name)
         }
       case _ =>
-        log.error(s"book_learn format error, json: $jsValue")
+        log.warn(s"book_learn format error, json: $jsValue")
         JsArray()
     }
 
@@ -123,30 +131,32 @@ object JsonUtil {
     }
 
 
-  def getIdent(tp: String)(implicit jsValue: JsValue): Either[String, List[String]] = {
+  def getIdent(tp: String)(implicit jsValue: JsValue): List[String] = {
     val abstr = getString(Field.ABSTRACT)
     if (abstr == "") {
       tp match {
         case Type.RECIPE | Type.UNCRAFT =>
           // see https://github.com/CleverRaven/Cataclysm-DDA/blob/30ffa2af1a1da178f3f328b54a366d60095967e4/src/recipe.cpp#L264
           if (hasField(Field.ID_SUFFIX)) {
-            Left(s"${getString(Field.RESULT)}_${getString(Field.ID_SUFFIX)}")
+            List(s"${getString(Field.RESULT)}_${getString(Field.ID_SUFFIX)}")
           } else {
-            Left(s"${getString(Field.RESULT)}")
+            List(s"${getString(Field.RESULT)}")
           }
         case Type.MATERIAL =>
           // see https://github.com/CleverRaven/Cataclysm-DDA/pull/39332
           val id = if (hasField(Field.IDENT)) getString(Field.IDENT) else getString(Field.ID)
-          Left(id)
+          List(id)
         case Type.MIGRATION =>
           (jsValue \ Field.ID).get match {
-            case x: JsArray => Right(x.value.map(_.as[String]).toList)
-            case x: JsString => Left(x.as[String])
-            case _ => throw new Exception("this should not happen")
+            case x: JsArray => x.value.map(_.as[String]).toList
+            case x: JsString => List(x.as[String])
+            case _ =>
+              log.warn(s"field: id format is not supported, json: $jsValue")
+              List("")
           }
         case _ =>
-          Left(s"${getString(Field.ID)}")
+          List(s"${getString(Field.ID)}")
       }
-    } else Left(s"$abstr")
+    } else List(s"$abstr")
   }
 }
