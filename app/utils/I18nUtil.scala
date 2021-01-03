@@ -32,8 +32,7 @@ object I18nUtil {
       }
   }
 
-  def tranObj(jsObject: JsObject, toTran: String*)
-             (implicit ctxt: HandlerContext = new HandlerContext()): JsObject = {
+  def tranObj(jsObject: JsObject, toTran: String*): JsObject = {
     val tp = getString(Field.TYPE)(jsObject).toLowerCase
     var res: JsObject = jsObject
     toTran.foreach {
@@ -54,18 +53,18 @@ object I18nUtil {
     res
   }
 
-  private def tranField(tp: String, field: String, jsValue: JsValue)(implicit ctxt: HandlerContext): JsValue = {
+  private def tranField(tp: String, field: String, jsValue: JsValue): JsValue = {
     try {
       field match {
         case Field.NAME => tranName(jsValue)
         case Field.DESCRIPTION => tranDescription(jsValue)
-        case Field.QUALITIES => tranQualities(tp, jsValue)
-        case Field.TOOLS => tranTools(jsValue)
-        case Field.COMPONENTS => tranComponent(jsValue)
-        case Field.CRAFT_TO | Field.UNCRAFT_FROM => tranCraft(jsValue)
-        case Field.BOOK_LEARN => tranBookLearn(jsValue)
-        case Field.RECIPES => tranRecipes(jsValue)
-        case Field.MATERIAL => tranMaterial(jsValue)
+//        case Field.QUALITIES => tranQualities(tp, jsValue)
+//        case Field.TOOLS => tranTools(jsValue)
+//        case Field.COMPONENTS => tranComponent(jsValue)
+//        case Field.CRAFT_TO | Field.UNCRAFT_FROM => tranCraft(jsValue)
+//        case Field.BOOK_LEARN => tranBookLearn(jsValue)
+//        case Field.RECIPES => tranRecipes(jsValue)
+//        case Field.MATERIAL => tranMaterial(jsValue)
       }
     } catch {
       case err: Exception =>
@@ -240,7 +239,7 @@ object I18nUtil {
     }
   }
 
-  def tranString(toTran: String, ctxt: String = ""): JsString = {
-    JsString(trans.get(toTran).flatMap(_.get(ctxt)).getOrElse(toTran))
+  def tranString(toTran: String, ctx: String = ""): JsString = {
+    JsString(trans.get(toTran).flatMap(_.get(ctx)).getOrElse(toTran))
   }
 }

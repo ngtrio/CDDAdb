@@ -13,26 +13,19 @@ import scala.collection.mutable
 object ItemHandler extends Handler {
   private val log = Logger(ItemHandler.getClass)
 
-  override def handle(objs: mutable.Map[String, JsObject])(implicit ctxt: HandlerContext): Unit = {
-    log.debug(s"handling ${objs.size} objects, wait...")
-
-    objs.foreach {
-      pair =>
-        val (ident, obj) = pair
-        implicit var pend: JsObject = obj
-        val tp = getString(TYPE).toLowerCase
-        pend = handleColor
-        pend = handleConductive
-
-        // handle special field according to subtype
-        pend = tp match {
-          case Type.ARMOR => calArmorProtection
-          case _ => pend
-        }
-
-        objs(ident) = pend
+  override def handle(json: JsObject): JsObject = {
+        implicit var pend: JsObject = json
+//        val tp = getString(TYPE).toLowerCase
+    //        pend = handleColor
+    //        pend = handleConductive
+    //
+    //        // handle special field according to subtype
+    //        pend = tp match {
+    //          case Type.ARMOR => calArmorProtection
+    //          case _ => pend
+    //        }
+      pend
     }
-  }
 
   override def finalize(objs: mutable.Map[String, JsObject])
                        (implicit ctxt: HandlerContext): Unit = {

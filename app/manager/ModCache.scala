@@ -2,6 +2,7 @@ package manager
 
 import common.Field
 import play.api.Logger
+import play.api.libs.json.JsObject
 import utils.FileUtil
 import utils.FileUtil.{ONLY_FILE, ls}
 import utils.JsonUtil.{fromFile, getArray, getString}
@@ -21,11 +22,25 @@ class ModCache {
   private val mods = mutable.Map[String, Mod]()
   private val modMetas = mutable.Map[String, ModMeta]()
 
+  def search(`type`: String, id: String): List[(String, JsObject)] = {
+    mods.keys
+      .map(modId => modId -> mods(modId).search(`type`, id))
+      .foldLeft(List[(String, JsObject)]()) {
+        (res, opt) =>
+          opt._2 match {
+            case Some(value) =>
+              res :+ opt._1 -> value
+            case None =>
+              res
+          }
+      }
+  }
+
   def load(modsPath: String): Unit = {
     val modDirs = FileUtil.ls(new File(modsPath), recursive = false, FileUtil.ONLY_DIR)
     modDirs.foreach(loadModMeta)
     modMetas.foreach(pair => loadMod(pair._2))
-    handleCopyFrom()
+    mods.foreach(pair => pair._2.processJson())
   }
 
   private def loadModMeta(modDir: File): Unit = {
@@ -50,25 +65,15 @@ class ModCache {
     if (!mods.contains(meta.id)) {
       val dependencies = meta.dependencies
       val modDir = meta.modDir
-
-      dependencies.foreach {
-        depId =>
-          loadMod(modMetas(depId))
-      }
+      dependencies.foreach(depId => loadMod(modMetas(depId)))
 
       val mod = new Mod(meta)
       val files = ls(modDir, recursive = true, ONLY_FILE)
       files.foreach(fromFile(_).foreach(mod.loadJson(_)))
       mods += meta.id -> mod
-    }
-  }
 
-  private def handleCopyFrom(): Unit = {
-    mods.keys.foreach {
-      modId =>
-        val meta = modMetas(modId)
-        val depMod = meta.dependencies.map(id => mods(id))
-        mods(modId).handleCopyFrom(depMod)
+      val depMod = dependencies.map(mods(_))
+      mod.handleCopyFrom(depMod)
     }
   }
 }

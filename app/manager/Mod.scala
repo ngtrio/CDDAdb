@@ -3,6 +3,7 @@ package manager
 import common.Field
 import common.Field._
 import common.Type.{AMMO, MONSTER}
+import handler.HandlerChain
 import play.api.Logger
 import play.api.libs.json._
 import utils.JsonUtil
@@ -20,8 +21,8 @@ class Mod(val meta: ModMeta) {
   private val log = Logger(this.getClass)
 
   private val _normal = mutable.Map[String, mutable.Map[String, JsObject]]()
-  private val _pendingCopyFrom = mutable.Map[String, mutable.Map[String, JsObject]]()
-  private val _doingCopyFrom = mutable.Map[String, mutable.Map[String, JsObject]]()
+  private var _pendingCopyFrom = mutable.Map[String, mutable.Map[String, JsObject]]()
+  private var _doingCopyFrom = mutable.Map[String, mutable.Map[String, JsObject]]()
 
   def addNormal(`type`: String, id: String, json: JsObject): Unit = {
     _normal.getOrElseUpdate(`type`, mutable.Map[String, JsObject]()) += id -> json
@@ -31,7 +32,7 @@ class Mod(val meta: ModMeta) {
     _pendingCopyFrom.getOrElseUpdate(`type`, mutable.Map[String, JsObject]()) += id -> json
   }
 
-  def getNormal(`type`: String, id: String): Option[JsObject] = {
+  def search(`type`: String, id: String): Option[JsObject] = {
     _normal.get(`type`).flatMap(_.get(id))
   }
 
@@ -71,12 +72,16 @@ class Mod(val meta: ModMeta) {
   }
 
   def handleCopyFrom(dependencies: List[Mod]): Unit = {
-    _pendingCopyFrom.foreach {
-      pair =>
-        val `type` = pair._1
-        pair._2.keys.foreach(doHandleCopyFrom(dependencies, `type`, _))
-        log.info(s"[Mod]: ${meta.name} => ${`type`} loaded, total ${_normal(`type`).size}")
+    if (_pendingCopyFrom != null && _doingCopyFrom != null) {
+      _pendingCopyFrom.foreach {
+        pair =>
+          val `type` = pair._1
+          pair._2.keys.foreach(doHandleCopyFrom(dependencies, `type`, _))
+          log.info(s"[Mod]: ${meta.name} => ${`type`} loaded, total ${_normal(`type`).size}")
+      }
     }
+    _pendingCopyFrom = null
+    _doingCopyFrom = null
   }
 
   private def doHandleCopyFrom(dependencies: List[Mod], `type`: String, id: String): Option[JsObject] = {
@@ -210,9 +215,19 @@ class Mod(val meta: ModMeta) {
     var res: Option[JsObject] = None
     var i = 0
     while (res.isEmpty && i < dependencies.length) {
-      res = dependencies(i).getNormal(`type`, id)
+      res = dependencies(i).search(`type`, id)
       i += 1
     }
     res
+  }
+
+  def processJson(): Unit = {
+    val chain = HandlerChain()
+    _normal.keys.foreach {
+      `type` =>
+        _normal(`type`).keys.foreach {
+          id => _normal(`type`)(id) = chain.handle(_normal(`type`)(id))
+        }
+    }
   }
 }

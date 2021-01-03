@@ -234,15 +234,15 @@ class ResourceManager {
 
   private def postProcess(): Unit = {
     // 任何字段处理都必须在本循环处理完
-    handlerCtx.objCaches.foreach { cacheMap =>
-      val (tp, objCache) = cacheMap
-      tp match {
-        case ITEM => ItemHandler.handle(objCache)
-        case RECIPE | UNCRAFT => RecipeHandler.handle(objCache)
-        case MONSTER => MonsterHandler.handle(objCache)
-        case _ => CommonHandler.handle(objCache)
-      }
-    }
+//    handlerCtx.objCaches.foreach { cacheMap =>
+//      val (tp, objCache) = cacheMap
+//      tp match {
+//        case ITEM => ItemHandler.handle(objCache)
+//        case RECIPE | UNCRAFT => RecipeHandler.handle(objCache)
+//        case MONSTER => MonsterHandler.handle(objCache)
+//        case _ => CommonHandler.handle(objCache)
+//      }
+//    }
 
     // 翻译、构建索引等
     handlerCtx.objCaches.foreach { cacheMap =>

@@ -11,8 +11,8 @@ import scala.collection.mutable
 object CommonHandler extends Handler {
   private val log = Logger(CommonHandler.getClass)
 
-  override def handle(objs: mutable.Map[String, JsObject])(implicit ctxt: HandlerContext): Unit = {
-    log.debug(s"handling ${objs.size} objects, wait...")
+  override def handle(json: JsObject): JsObject = {
+    json
   }
 
   override def finalize(objs: mutable.Map[String, JsObject])(implicit ctxt: HandlerContext): Unit = {

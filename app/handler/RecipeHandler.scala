@@ -16,18 +16,13 @@ import scala.collection.mutable
 object RecipeHandler extends Handler {
   private val log = Logger(RecipeHandler.getClass)
 
-  override def handle(objs: mutable.Map[String, JsObject])(implicit ctxt: HandlerContext): Unit = {
-    log.debug(s"handling ${objs.size} objects, wait...")
-
-    objs.foreach {
-      pair =>
-        val (ident, obj) = pair
-        var pend = fill(obj)
-        pend = handleRequirement(pend)
-        handleBookLearn(pend)
-        handleCraft(pend)
-        objs(ident) = pend
-    }
+  override def handle(json: JsObject): JsObject = {
+    implicit var pend = json
+//    pend = fill(pend)
+//    pend = handleRequirement(pend)
+//    handleBookLearn(pend)
+//    handleCraft(pend)
+    pend
   }
 
   private def fill(obj: JsObject): JsObject = {

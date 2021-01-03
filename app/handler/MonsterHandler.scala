@@ -1,11 +1,13 @@
 package handler
 
+import common.{Field, Type}
 import common.Field._
 import common.Type._
-import manager.HandlerContext
+import manager.{HandlerContext, Mod}
 import play.api.Logger
 import play.api.libs.json.{JsArray, JsObject, Json}
 import utils.I18nUtil.{tranObj, tranString}
+import utils.JsonUtil
 import utils.JsonUtil._
 
 import scala.collection.mutable
@@ -14,23 +16,21 @@ object MonsterHandler extends Handler {
   private val log = Logger(MonsterHandler.getClass)
   private val prefix = MONSTER
 
-  override def handle(objs: mutable.Map[String, JsObject])(implicit ctxt: HandlerContext): Unit = {
-    log.debug(s"handling ${objs.size} objects, wait...")
-    objs.foreach {
-      pair =>
-        val (ident, obj) = pair
-        implicit var pend: JsObject = obj
-        pend = handleColor
-
-        pend = fill
-        val diff = difficulty
-        val vol = volume
-        pend = pend ++ Json.obj(
-          DIFFICULTY -> diff,
-          VOLUME -> vol
-        )
-
-        objs(ident) = pend
+  override def handle(json: JsObject): JsObject = {
+    val `type` = JsonUtil.getString(Field.TYPE)(json).toLowerCase
+    if (`type` == Type.MONSTER) {
+      implicit var pend: JsObject = json
+      pend = handleColor
+      pend = fill
+      val diff = difficulty
+      val vol = volume
+      pend = pend ++ Json.obj(
+        DIFFICULTY -> diff,
+        VOLUME -> vol
+      )
+      tranObj(pend, NAME, DESCRIPTION)
+    } else {
+      json
     }
   }
 

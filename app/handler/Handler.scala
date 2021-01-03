@@ -1,13 +1,13 @@
 package handler
 
-import manager.HandlerContext
+import manager.{HandlerContext, Mod}
 import play.api.libs.json.JsObject
 
 import scala.collection.mutable
 
 
 trait Handler {
-  def handle(objs: mutable.Map[String, JsObject])(implicit ctxt: HandlerContext): Unit
+  def handle(json: JsObject): JsObject
 
   def finalize(objs: mutable.Map[String, JsObject])(implicit ctxt: HandlerContext): Unit
 
@@ -15,5 +15,5 @@ trait Handler {
 }
 
 object Handler {
-  val handlers = List(ItemHandler, MonsterHandler)
+  val handlers = List(MonsterHandler)
 }
