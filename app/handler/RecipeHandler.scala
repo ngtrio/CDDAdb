@@ -13,10 +13,10 @@ import scala.collection.mutable
 /**
  * we use this handler to handle both recipe and uncraft type
  */
-object RecipeHandler extends Handler {
+object RecipeHandler {
   private val log = Logger(RecipeHandler.getClass)
 
-  override def handle(json: JsObject): JsObject = {
+   def handle(json: JsObject): JsObject = {
     implicit var pend = json
 //    pend = fill(pend)
 //    pend = handleRequirement(pend)
@@ -181,25 +181,6 @@ object RecipeHandler extends Handler {
                 addToArray(CRAFT_TO, JsString(result))(item)
             }
         }
-    }
-  }
-
-  override def finalize(objs: mutable.Map[String, JsObject])
-                       (implicit ctxt: HandlerContext): Unit = {
-    objs.foreach {
-      pair =>
-        val (ident, obj) = pair
-        val tp = getString(TYPE)(obj).toLowerCase
-
-        val result = getString(RESULT)(obj)
-        val pend = tranObj(obj, QUALITIES, TOOLS, COMPONENTS, BOOK_LEARN, MATERIAL) ++ Json.obj(
-          NAME -> tranIdent(Type.ITEM, result)
-        )
-        val key = tp match {
-          case Type.RECIPE => s"${Type.RECIPE}:$ident"
-          case Type.UNCRAFT => s"${Type.UNCRAFT}:$ident"
-        }
-        ctxt.addIndex(key -> pend)
     }
   }
 }

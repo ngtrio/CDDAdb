@@ -9,7 +9,7 @@ import scala.collection.mutable
 trait Handler {
   def handle(json: JsObject): JsObject
 
-  def finalize(objs: mutable.Map[String, JsObject])(implicit ctxt: HandlerContext): Unit
+  protected def canHandle(json: JsObject): Boolean
 
   protected def genKey(prefix: String, value: String): String = s"$prefix:$value"
 }

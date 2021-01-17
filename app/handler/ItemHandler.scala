@@ -10,10 +10,10 @@ import utils.JsonUtil._
 
 import scala.collection.mutable
 
-object ItemHandler extends Handler {
+object ItemHandler {
   private val log = Logger(ItemHandler.getClass)
 
-  override def handle(json: JsObject): JsObject = {
+  def handle(json: JsObject): JsObject = {
         implicit var pend: JsObject = json
 //        val tp = getString(TYPE).toLowerCase
     //        pend = handleColor
@@ -26,20 +26,6 @@ object ItemHandler extends Handler {
     //        }
       pend
     }
-
-  override def finalize(objs: mutable.Map[String, JsObject])
-                       (implicit ctxt: HandlerContext): Unit = {
-    objs.foreach {
-      pair =>
-        val (ident, obj) = pair
-        val pend = tranObj(obj, NAME, DESCRIPTION, QUALITIES, CRAFT_TO,
-          RECIPES, UNCRAFT_FROM, MATERIAL)
-        val tp = getString(TYPE)(pend).toLowerCase
-        ctxt.addIndex(
-          s"$tp:$ident" -> pend,
-        )
-    }
-  }
 
   private def calArmorProtection(implicit obj: JsObject, ctxt: HandlerContext): JsObject = {
     def baseResit(rType: String, mts: JsArray): Double =

@@ -1,7 +1,7 @@
 package manager
 
 import common.Field
-import play.api.Logger
+import play.api.{Configuration, Logger}
 import play.api.libs.json.JsObject
 import utils.FileUtil
 import utils.FileUtil.{ONLY_FILE, ls}
@@ -9,6 +9,7 @@ import utils.JsonUtil.{fromFile, getArray, getString}
 
 import java.io.File
 import java.nio.file.Path
+import javax.inject.{Inject, Singleton}
 import scala.collection.mutable
 
 /**
@@ -17,30 +18,25 @@ import scala.collection.mutable
  * @author jaron
  *         created on 2020/12/27 at 下午9:43
  */
-class ModCache {
+class ModCache @Inject()(val config: Configuration) {
 
-  private val mods = mutable.Map[String, Mod]()
-  private val modMetas = mutable.Map[String, ModMeta]()
+  private val _mods: mutable.Map[String, Mod] = mutable.Map[String, Mod]()
+  private val _modMetas = mutable.Map[String, ModMeta]()
 
-  def search(`type`: String, id: String): List[(String, JsObject)] = {
-    mods.keys
-      .map(modId => modId -> mods(modId).search(`type`, id))
-      .foldLeft(List[(String, JsObject)]()) {
-        (res, opt) =>
-          opt._2 match {
-            case Some(value) =>
-              res :+ opt._1 -> value
-            case None =>
-              res
-          }
-      }
+  private val notUpdate = config.get[Boolean]("notUpdate")
+  private val modsPath = config.get[String]("modsPath")
+
+  if (notUpdate || ResourceUpdater.update()) {
+    load(modsPath)
   }
 
-  def load(modsPath: String): Unit = {
+  def mods: mutable.Map[String, Mod] = _mods
+
+  private def load(modsPath: String): Unit = {
     val modDirs = FileUtil.ls(new File(modsPath), recursive = false, FileUtil.ONLY_DIR)
     modDirs.foreach(loadModMeta)
-    modMetas.foreach(pair => loadMod(pair._2))
-    mods.foreach(pair => pair._2.processJson())
+    _modMetas.foreach(pair => loadMod(pair._2))
+    _mods.foreach(pair => pair._2.processJson())
   }
 
   private def loadModMeta(modDir: File): Unit = {
@@ -58,21 +54,21 @@ class ModCache {
       modDir
     }
 
-    modMetas += modId -> ModMeta(modId, modName, modDesc, modDependencies, modSrcDir)
+    _modMetas += modId -> ModMeta(modId, modName, modDesc, modDependencies, modSrcDir)
   }
 
   private def loadMod(meta: ModMeta): Unit = {
-    if (!mods.contains(meta.id)) {
+    if (!_mods.contains(meta.id)) {
       val dependencies = meta.dependencies
       val modDir = meta.modDir
-      dependencies.foreach(depId => loadMod(modMetas(depId)))
+      dependencies.foreach(depId => loadMod(_modMetas(depId)))
 
       val mod = new Mod(meta)
       val files = ls(modDir, recursive = true, ONLY_FILE)
       files.foreach(fromFile(_).foreach(mod.loadJson(_)))
-      mods += meta.id -> mod
+      _mods += meta.id -> mod
 
-      val depMod = dependencies.map(mods(_))
+      val depMod = dependencies.map(_mods(_))
       mod.handleCopyFrom(depMod)
     }
   }

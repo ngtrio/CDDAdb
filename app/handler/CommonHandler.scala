@@ -8,19 +8,10 @@ import utils.JsonUtil.getString
 
 import scala.collection.mutable
 
-object CommonHandler extends Handler {
+object CommonHandler {
   private val log = Logger(CommonHandler.getClass)
 
-  override def handle(json: JsObject): JsObject = {
+  def handle(json: JsObject): JsObject = {
     json
-  }
-
-  override def finalize(objs: mutable.Map[String, JsObject])(implicit ctxt: HandlerContext): Unit = {
-    objs.foreach {
-      pair =>
-        val (ident, obj) = pair
-        val tp = getString(TYPE)(obj).toLowerCase
-        ctxt.addIndex(s"$tp:$ident" -> obj)
-    }
   }
 }

@@ -74,31 +74,3 @@
   "difficulty": "29.38880(高威胁。)"    // 难度
 }
 ```
-
-# Item
-
-- [ ] `GET /item/{type}/{name}`
-
-Item下的所有类型均会添加两个附加字段：
-
-1.  craft_to：array，包含了所有能够通过本物品作为原料制作得到的物品prefix:ident
-2.  craft_from：number，该物品制作配方的数量
-
-```json
-{
-    "craft_to": ["item1", "item2"],
-    "craft_from": 1
-}
-```
-
-## Book
-
-除开`Item`中添加的两个附加字段还添加了一个附加字段：
-
-1.  recipes：array，包含了本书包含的所有recipe
-
-```json
-{
-    "recipes": ["recipe1", "recipe2", "recipe3"]
-}
-```

@@ -10,7 +10,6 @@ import utils.JsonUtil
 import utils.JsonUtil.getString
 
 import scala.collection.mutable
-import scala.collection.mutable.ListBuffer
 
 /**
  * @author jaron
@@ -54,7 +53,7 @@ class Mod(val meta: ModMeta) {
   }
 
   private def shouldLoad(jsObject: JsObject): Boolean = {
-    val whiteList = List(MONSTER, AMMO)
+    val whiteList = List(MONSTER)
     val tp = getString(TYPE)(jsObject).toLowerCase
 
     val isObsolete: Boolean = {

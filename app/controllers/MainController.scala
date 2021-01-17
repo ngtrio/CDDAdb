@@ -1,19 +1,18 @@
 package controllers
 
-import javax.inject.Inject
-import play.api.mvc._
+import common.WritesImplicit._
+import play.api.libs.json.Json
+import play.api.mvc.{AbstractController, Action, AnyContent, ControllerComponents}
 import repository.MemRepository
+
+import javax.inject.Inject
 
 class MainController @Inject()(cc: ControllerComponents,
                                repo: MemRepository
                               ) extends AbstractController(cc) {
-  def getInfo(prefix: String, id: String): Action[AnyContent] = Action {
-    val res = repo.getOne(s"$prefix:$id")
-    Ok(res).as(JSON)
-  }
 
-  def listAll(tp: String): Action[AnyContent] = Action {
-    val res = repo.listNameInfo(tp)
-    Ok(res).as(JSON)
+  def getInfo(`type`: String, id: String): Action[AnyContent] = Action {
+    val res = repo.getByTypeAndId(`type`, id)
+    Ok(Json.toJson(res))
   }
 }
