@@ -1,0 +1,379 @@
+{
+  "monster": [
+    {
+      "id": "mon_zombie_master",
+      "name": "丧尸主宰",
+      "symbol": "Z",
+      "color": [
+        "pink",
+        "red"
+      ]
+    },
+    {
+      "id": "mon_mech_recon",
+      "name": "X-03：\"幽灵\"型侦察机甲",
+      "symbol": "M",
+      "color": [
+        "blue",
+        ""
+      ]
+    },
+    {
+      "id": "mon_breather_hub",
+      "name": "呼吸者",
+      "symbol": "O",
+      "color": [
+        "pink",
+        ""
+      ]
+    },
+    {
+      "id": "mon_zombie_master",
+      "name": "丧尸主宰",
+      "symbol": "Z",
+      "color": [
+        "pink",
+        "red"
+      ]
+    },
+    {
+      "id": "mon_mech_recon",
+      "name": "X-03：\"幽灵\"型侦察机甲",
+      "symbol": "M",
+      "color": [
+        "blue",
+        ""
+      ]
+    },
+    {
+      "id": "mon_breather_hub",
+      "name": "呼吸者",
+      "symbol": "O",
+      "color": [
+        "pink",
+        ""
+      ]
+    },
+    {
+      "id": "mon_zombie_master",
+      "name": "丧尸主宰",
+      "symbol": "Z",
+      "color": [
+        "pink",
+        "red"
+      ]
+    },
+    {
+      "id": "mon_mech_recon",
+      "name": "X-03：\"幽灵\"型侦察机甲",
+      "symbol": "M",
+      "color": [
+        "blue",
+        ""
+      ]
+    },
+    {
+      "id": "mon_breather_hub",
+      "name": "呼吸者",
+      "symbol": "O",
+      "color": [
+        "pink",
+        ""
+      ]
+    },
+    {
+      "id": "mon_zombie_master",
+      "name": "丧尸主宰",
+      "symbol": "Z",
+      "color": [
+        "pink",
+        "red"
+      ]
+    },
+    {
+      "id": "mon_mech_recon",
+      "name": "X-03：\"幽灵\"型侦察机甲",
+      "symbol": "M",
+      "color": [
+        "blue",
+        ""
+      ]
+    },
+    {
+      "id": "mon_breather_hub",
+      "name": "呼吸者",
+      "symbol": "O",
+      "color": [
+        "pink",
+        ""
+      ]
+    },
+    {
+      "id": "mon_zombie_master",
+      "name": "丧尸主宰",
+      "symbol": "Z",
+      "color": [
+        "pink",
+        "red"
+      ]
+    },
+    {
+      "id": "mon_mech_recon",
+      "name": "X-03：\"幽灵\"型侦察机甲",
+      "symbol": "M",
+      "color": [
+        "blue",
+        ""
+      ]
+    },
+    {
+      "id": "mon_breather_hub",
+      "name": "呼吸者",
+      "symbol": "O",
+      "color": [
+        "pink",
+        ""
+      ]
+    }
+  ],
+  "mon_zombie_master": {
+    "armor_cut": 2,
+    "armor_bash": 2,
+    "armor_bullet": 2,
+    "armor_stab": 0,
+    "armor_acid": 0,
+    "armor_fire": 0,
+    "melee_skill": 5,
+    "melee_dice": 2,
+    "melee_dice_sides": 6,
+    "melee_cut": 0,
+    "dodge": 4,
+    "diff": 20,
+    "special_attacks": [
+      [
+        "UPGRADE",
+        10
+      ]
+    ],
+    "emit_field": [],
+    "attack_cost": 100,
+    "morale": 100,
+    "aggression": 5,
+    "vision_day": 50,
+    "vision_night": 5,
+    "symbol": "Z",
+    "color": [
+      "pink",
+      "red"
+    ],
+    "hp": 180,
+    "flags": [
+      "SEES",
+      "HEARS",
+      "SMELLS",
+      "WARM",
+      "BASHES",
+      "POISON",
+      "NO_BREATHE",
+      "REVIVES",
+      "PATH_AVOID_DANGER_2",
+      "CAN_OPEN_DOORS",
+      "PRIORITIZE_TARGETS",
+      "FILTHY"
+    ],
+    "anger_triggers": [
+      "HURT",
+      "PLAYER_CLOSE",
+      "PLAYER_WEAK"
+    ],
+    "description": "曾经是个人类，这只怪物的五官风干收紧，它的嘴唇回缩让它露出不自然的诡异笑容，暴露出在它炯炯有神的大眼睛下方的一排黝黑发亮的牙齿。它体型庞大，移动起来流畅而又如同经过严密控制一般。它周围的空气弥漫着一股危险的气息，而照落在它身上的光线似乎变得更明亮刺眼。",
+    "type": "MONSTER",
+    "death_function": [
+      "NORMAL"
+    ],
+    "speed": 90,
+    "burn_into": "mon_zombie_scorched",
+    "bodytype": "human",
+    "id": "mon_zombie_master",
+    "harvest": "zombie",
+    "default_faction": "zombie",
+    "weight": "81500 g",
+    "volume": "62.5L(中等)",
+    "material": [
+      "flesh"
+    ],
+    "species": [
+      "ZOMBIE",
+      "HUMAN"
+    ],
+    "name": "丧尸主宰",
+    "death_drops": "default_zombie_death_drops",
+    "path_settings": {
+      "max_dist": 10
+    },
+    "difficulty": "60.79840(<color_red>致命威胁！</color>)"
+  },
+  "mon_mech_recon": {
+    "armor_cut": 25,
+    "armor_bash": 15,
+    "armor_bullet": 20,
+    "armor_stab": 0,
+    "armor_acid": 0,
+    "armor_fire": 0,
+    "melee_skill": 6,
+    "melee_dice": 3,
+    "melee_dice_sides": 8,
+    "melee_cut": 5,
+    "dodge": 0,
+    "diff": 5,
+    "special_attacks": [],
+    "emit_field": [],
+    "attack_cost": 100,
+    "morale": 100,
+    "aggression": -50,
+    "vision_day": 40,
+    "vision_night": 100,
+    "symbol": "M",
+    "color": [
+      "blue",
+      ""
+    ],
+    "hp": 320,
+    "flags": [
+      "SEES",
+      "MECH_RECON_VISION",
+      "HEARS",
+      "MILITARY_MECH",
+      "BASHES",
+      "PUSH_MON",
+      "ELECTRONIC",
+      "NOHEAD",
+      "NO_BREATHE",
+      "RIDEABLE_MECH",
+      "PRIORITIZE_TARGETS",
+      "PATH_AVOID_DANGER_2"
+    ],
+    "description": "这是一套波音-大宇公司制造的侦察用机械式外骨骼装甲（RMES），最近才被投入美国军队使用。它被设计使用于侦察或狙击，拥有较好的移动性，内置了激光狙击枪和一套用于目标指示和战场感知的光学系统。在大灾变之前并未大规模部署，但是已有几套原型在战场上使用。你也许可以侵入它使其接受你的驾驶。和其他机甲一样，它的大型电池可以作为UPS使用。",
+    "type": "MONSTER",
+    "death_function": [
+      "BROKEN"
+    ],
+    "speed": 120,
+    "mech_weapon": "recon_mech_laser",
+    "id": "mon_mech_recon",
+    "default_faction": "mech_bot",
+    "mech_battery": "huge_atomic_battery_cell",
+    "weight": "700388 g",
+    "volume": "700.388L(巨大)",
+    "mech_str_bonus": 5,
+    "revert_to_itype": "broken_mech_recon",
+    "material": [
+      "superalloy"
+    ],
+    "species": [
+      "ROBOT"
+    ],
+    "name": "X-03：\"幽灵\"型侦察机甲",
+    "death_drops": {
+      "groups": [
+        [
+          "robots",
+          20
+        ]
+      ]
+    },
+    "difficulty": "103.19400(<color_red>致命威胁！</color>)"
+  },
+  "mon_breather_hub": {
+    "armor_cut": 0,
+    "armor_bash": 0,
+    "armor_bullet": 0,
+    "armor_stab": 0,
+    "armor_acid": 0,
+    "armor_fire": 0,
+    "melee_skill": 0,
+    "melee_dice": 0,
+    "melee_dice_sides": 0,
+    "melee_cut": 0,
+    "dodge": 0,
+    "diff": 0,
+    "special_attacks": [
+      [
+        "BREATHE",
+        8
+      ]
+    ],
+    "emit_field": [],
+    "attack_cost": 100,
+    "morale": 0,
+    "aggression": 0,
+    "vision_day": 40,
+    "vision_night": 1,
+    "symbol": "O",
+    "harvest": "exempt",
+    "color": [
+      "pink",
+      ""
+    ],
+    "default_faction": "nether",
+    "hp": 100,
+    "flags": [
+      "ACIDPROOF",
+      "ACID_BLOOD",
+      "IMMOBILE"
+    ],
+    "description": "一个奇怪的，不动的粉红色粘性物，它似乎在缓慢的呼吸。",
+    "weight": "81500 g",
+    "type": "MONSTER",
+    "death_function": [
+      "KILL_BREATHERS"
+    ],
+    "speed": 100,
+    "volume": "62.5L(中等)",
+    "species": [
+      "NETHER"
+    ],
+    "bodytype": "blob",
+    "name": "呼吸者",
+    "id": "mon_breather_hub",
+    "difficulty": "1.59040(<color_light_gray>极低威胁。</color>)"
+  },
+  "book": [
+    {
+      "id": "boo1",
+      "name": "book1",
+      "symbol": "B",
+      "color": [
+        "pink",
+        "red"
+      ]
+    },
+    {
+      "id": "boo1",
+      "name": "book1",
+      "symbol": "B",
+      "color": [
+        "pink",
+        "red"
+      ]
+    },
+    {
+      "id": "boo1",
+      "name": "book1",
+      "symbol": "B",
+      "color": [
+        "pink",
+        "red"
+      ]
+    },
+    {
+      "id": "boo1",
+      "name": "book1",
+      "symbol": "B",
+      "color": [
+        "pink",
+        "red"
+      ]
+    }
+  ]
+}

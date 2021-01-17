@@ -1,0 +1,15 @@
+<div>
+  <h3>Monster</h3>
+  <mat-chip-list>
+    <mat-chip *ngFor="let object of objects" (click)="getOne(object['id'])">
+      <span [ngStyle]="{color: object['color'][0], backgroundColor: object['color'][1]}">
+        {{object['symbol']}}
+      </span>
+      <span>
+        {{object['name']}}
+      </span>
+    </mat-chip>
+  </mat-chip-list>
+</div>
+
+

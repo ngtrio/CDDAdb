@@ -1,0 +1,14 @@
+<mat-grid-list class="grid" [cols]="colsPerRow" rowHeight="fit" gutterSize="3">
+  <mat-grid-tile
+    *ngFor="let tile of tiles"
+    [class]="tile.class"
+    [colspan]="tile.cols"
+    [rowspan]="tile.rows"
+    [style]="{backgroundColor: tile.color}">
+    <div [ngSwitch]="tile.class">
+      <app-side-bar *ngSwitchCase="tiles[1].class"></app-side-bar>
+      <app-showcase *ngSwitchCase="tiles[2].class"></app-showcase>
+      <app-panel *ngSwitchCase="tiles[3].class"></app-panel>
+    </div>
+  </mat-grid-tile>
+</mat-grid-list>
